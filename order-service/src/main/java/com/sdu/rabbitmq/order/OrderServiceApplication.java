@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
-@MapperScan("com.sdu.rabbitmq")
+@MapperScan({"com.sdu.rabbitmq"})
 @ComponentScan("com.sdu.rabbitmq")
 @EnableAsync
 public class OrderServiceApplication {

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
@@ -13,8 +12,8 @@ import java.util.concurrent.TimeoutException;
 @Configuration
 public class RabbitConfig {
 
-    @Resource
-    OrderMessageService orderMessageService;
+    @Autowired
+    private OrderMessageService orderMessageService;
 
     @Autowired
     public void startListenMessage() throws IOException, TimeoutException, InterruptedException {
