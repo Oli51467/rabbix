@@ -3,12 +3,11 @@ package com.sdu.rabbitmq.order.controller;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import com.sdu.rabbitmq.order.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @RestController
@@ -16,10 +15,10 @@ import javax.annotation.Resource;
 public class OrderController {
 
     @Resource
-    OrderService orderService;
+    private OrderService orderService;
 
-    @PostMapping("/create")
-    public void createOrder(@RequestBody CreateOrderVO orderCreateDTO) {
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    public void createOrder(@RequestBody CreateOrderVO orderCreateDTO) throws IOException, TimeoutException {
         log.info("createOrder:orderCreateDTO:{}", orderCreateDTO);
         orderService.createOrder(orderCreateDTO);
     }
