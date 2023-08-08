@@ -8,7 +8,10 @@ import lombok.ToString;
 @Setter
 @ToString
 public class CreateOrderVO {
-    private Integer accountId;
+
+    private Long accountId;
+
     private String address;
-    private Integer productId;
+
+    private Long productId;
 }
