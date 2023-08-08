@@ -17,6 +17,7 @@
     <name>rabbitmq-solution</name>
     <modules>
         <module>order-service</module>
+        <module>restaurant-service</module>
     </modules>
 
     <properties>

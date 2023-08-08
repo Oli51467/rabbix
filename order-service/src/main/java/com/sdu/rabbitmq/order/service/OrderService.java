@@ -41,7 +41,7 @@ public class OrderService {
 
     public void createOrder(CreateOrderVO createOrderVO) throws IOException, TimeoutException {
         log.info("createOrder:orderCreateVO: {}", createOrderVO);
-        // 创建订单
+        // 创建订单 设置订单状态为创建中
         OrderDetail order = new OrderDetail();
         order.setAddress(createOrderVO.getAddress());
         order.setProductId(createOrderVO.getProductId());

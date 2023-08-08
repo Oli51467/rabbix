@@ -32,3 +32,5 @@ build/
 ### VS Code ###
 .vscode/
 log
+order-service/src/main/resources/application.properties
+restaurant-service/src/main/resources/application.properties
