@@ -1,6 +1,7 @@
 package com.sdu.rabbitmq.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
@@ -35,6 +36,12 @@ public class OrderMessageService {
     @Value("${rabbitmq.exchange.order-delivery}")
     private String exchangeOrderDelivery;
 
+    @Value("${rabbitmq.exchange.order-settlement}")
+    private String exchangeOrderSettlement;
+
+    @Value("${rabbitmq.exchange.order-reward}")
+    private String exchangeOrderReward;
+
     @Value("${rabbitmq.order-queue}")
     private String orderQueue;
 
@@ -59,7 +66,7 @@ public class OrderMessageService {
      * 声明消息队列、交换机、绑定、消息的处理
      */
     @Async
-    public void handleMessage() throws IOException, TimeoutException, InterruptedException {
+    public void handleMessage() throws IOException, TimeoutException {
         log.info("order service start listening message");
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost(LOCALHOST);
@@ -76,14 +83,25 @@ public class OrderMessageService {
             channel.queueBind(orderQueue, exchangeOrderRestaurant, orderRoutingKey);
 
             // 声明订单微服务和骑手微服务通信的交换机
-            channel.exchangeDeclare(exchangeOrderDelivery, BuiltinExchangeType.DIRECT, true,false,null);
+            channel.exchangeDeclare(exchangeOrderDelivery, BuiltinExchangeType.DIRECT, true, false, null);
             // 将队列绑定在交换机上,routingKey是key.order
             channel.queueBind(orderQueue, exchangeOrderDelivery, orderRoutingKey);
 
+            // 声明订单微服务和结算微服务通信的交换机
+            channel.exchangeDeclare(exchangeOrderSettlement, BuiltinExchangeType.FANOUT, true, false, null);
+            // 将队列绑定在交换机上,routingKey是key.order
+            channel.queueBind(orderQueue, exchangeOrderSettlement, orderRoutingKey);
+
+            // 声明订单微服务和积分微服务通信的交换机
+            channel.exchangeDeclare(exchangeOrderReward, BuiltinExchangeType.TOPIC, true, false, null);
+            // 将队列绑定在交换机上,routingKey是key.order
+            channel.queueBind(orderQueue, exchangeOrderReward, orderRoutingKey);
+
             // 绑定监听回调
-            channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {});
+            channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {
+            });
             while (true) {
-                Thread.sleep(10000000);
+
             }
         }
     }
@@ -101,42 +119,85 @@ public class OrderMessageService {
 
         try {
             // 将消息体反序列化成DTO
-            OrderMessageDTO orderMessageDTO = objectMapper.readValue(messageBody, OrderMessageDTO.class);
+            OrderMessageDTO orderMessage = objectMapper.readValue(messageBody, OrderMessageDTO.class);
             // 从数据库中读取订单
             QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("id", orderMessageDTO.getOrderId());
-            OrderDetail orderDetail = orderDetailMapper.selectOne(queryWrapper);
+            queryWrapper.eq("id", orderMessage.getOrderId());
+            OrderDetail order = orderDetailMapper.selectOne(queryWrapper);
 
             // 通过订单状态判断是哪个微服务发来的消息
-            switch (orderDetail.getStatus()) {
+            switch (order.getStatus()) {
                 // 订单刚创建商家还未确认 是商家发来的消息
                 case ORDER_CREATING:
                     // 商家已确认订单并将价格写入
-                    if (orderMessageDTO.getConfirmed() && null != orderMessageDTO.getPrice()) {
-                        orderDetail.setStatus(OrderStatus.RESTAURANT_CONFIRMED);
-                        orderDetail.setPrice(orderMessageDTO.getPrice());
-                        orderDetailMapper.updateById(orderDetail);
+                    if (orderMessage.getConfirmed() && null != orderMessage.getPrice()) {
+                        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
+                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.RESTAURANT_CONFIRMED)
+                                .set("price", orderMessage.getPrice());
+                        orderDetailMapper.update(null, updateWrapper);
                         // 给骑手微服务发送消息
                         try (Connection connection = connectionFactory.newConnection();
                              Channel channel = connection.createChannel()) {
                             // 将DTO转换成Json字符串
-                            String messageToSend = objectMapper.writeValueAsString(orderMessageDTO);
+                            String messageToSend = objectMapper.writeValueAsString(orderMessage);
                             channel.basicPublish(exchangeOrderDelivery, deliveryRoutingKey, null, messageToSend.getBytes());
                         }
                     } else {
-                        orderDetail.setStatus(OrderStatus.FAILED);
-                        orderDetailMapper.updateById(orderDetail);
+                        order.setStatus(OrderStatus.FAILED);
+                        orderDetailMapper.updateById(order);
                     }
                     break;
+                // 骑手已确认后 消息的状态还没来得及改为DELIVERYMAN_CONFIRMED，所以还是RESTAURANT_CONFIRMED
                 case RESTAURANT_CONFIRMED:
-                    break;
-                case ORDER_CREATED:
+                    // 判断订单已经有了确定的骑手
+                    if (null != orderMessage.getDeliverymanId()) {
+                        // 更新数据库的订单状态和骑手信息
+                        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
+                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.DELIVERYMAN_CONFIRMED)
+                                .set("deliveryman_id", orderMessage.getDeliverymanId());
+                        orderDetailMapper.update(null, updateWrapper);
+                        // 向结算微服务发送一条消息 发送的方式是扇形广播
+                        try (Connection connection = connectionFactory.newConnection();
+                             Channel channel = connection.createChannel()) {
+                            String messageToSend = objectMapper.writeValueAsString(orderMessage);
+                            channel.basicPublish(exchangeOrderSettlement, settlementRoutingKey, null, messageToSend.getBytes());
+                        }
+                    } else {
+                        // 如果没有骑手，则直接更新订单的状态为失败
+                        updateOrderFailed(order.getId());
+                    }
                     break;
                 case DELIVERYMAN_CONFIRMED:
+                    // 判断订单是否已经有了结算订单的id
+                    if (null != orderMessage.getSettlementId()) {
+                        // 更新数据库的订单状态和结算信息
+                        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
+                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.SETTLEMENT_CONFIRMED)
+                                .set("settlement_id", orderMessage.getSettlementId());
+                        orderDetailMapper.update(null, updateWrapper);
+                        // 向积分微服务发送一条消息 发送的方式是topic
+                        try (Connection connection = connectionFactory.newConnection();
+                             Channel channel = connection.createChannel()) {
+                            String messageToSend = objectMapper.writeValueAsString(orderMessage);
+                            channel.basicPublish(exchangeOrderReward, rewardRoutingKey, null, messageToSend.getBytes());
+                        }
+                    } else {
+                        // 如果没有结算id，则直接更新订单的状态为失败
+                        updateOrderFailed(order.getId());
+                    }
                     break;
                 case SETTLEMENT_CONFIRMED:
-                    break;
-                case FAILED:
+                    // 判断订单是否已经有了积分的id
+                    if (null != orderMessage.getRewardId()) {
+                        // 更新数据库的订单状态和积分信息
+                        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
+                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.ORDER_CREATED)
+                                .set("reward_id", orderMessage.getRewardId());
+                        orderDetailMapper.update(null, updateWrapper);
+                    } else {
+                        // 如果没有积分id，则直接更新订单的状态为失败
+                        updateOrderFailed(order.getId());
+                    }
                     break;
                 default:
                     break;
@@ -145,4 +206,10 @@ public class OrderMessageService {
             log.error(e.getMessage(), e);
         }
     };
+
+    private void updateOrderFailed(Long orderId) {
+        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", orderId).set("status", OrderStatus.FAILED);
+        orderDetailMapper.update(null, updateWrapper);
+    }
 }
