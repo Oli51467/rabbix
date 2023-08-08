@@ -32,7 +32,7 @@ public class AsyncTaskConfig implements AsyncConfigurer {
         // 等待任务在关机时完成--表明等待所有线程执行完
         threadPool.setWaitForTasksToCompleteOnShutdown(true);
         // 等待时间 （默认为0，此时立即停止），并没等待xx秒后强制停止
-        threadPool.setAwaitTerminationSeconds(60);
+        threadPool.setAwaitTerminationSeconds(5);
         // 线程名称前缀
         threadPool.setThreadNamePrefix("Rabbit-Async-");
         // 初始化线程

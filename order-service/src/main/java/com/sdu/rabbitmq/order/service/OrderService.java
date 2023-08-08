@@ -57,6 +57,7 @@ public class OrderService {
         orderMessage.setOrderId(order.getId());
         orderMessage.setProductId(order.getProductId());
         orderMessage.setAccountId(order.getAccountId());
+        orderMessage.setOrderStatus(OrderStatus.ORDER_CREATING);
 
         // 建立连接并将订单信息发送到消息队列 给餐厅微服务发送消息
         ConnectionFactory connectionFactory = new ConnectionFactory();

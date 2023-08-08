@@ -1,6 +1,5 @@
 package com.sdu.rabbitmq.order.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +22,7 @@ import static com.sdu.rabbitmq.order.common.constants.LOCALHOST;
 /**
  * 和rabbitmq消息处理相关的通信服务类
  */
-@Service
+@Service("OrderMessageService")
 @Slf4j
 public class OrderMessageService {
 
@@ -37,7 +36,10 @@ public class OrderMessageService {
     private String exchangeOrderDelivery;
 
     @Value("${rabbitmq.exchange.order-settlement}")
-    private String exchangeOrderSettlement;
+    private String sendExchangeOrderSettlement;
+
+    @Value("${rabbitmq.exchange.settlement-order}")
+    private String receiveExchangeOrderSettlement;
 
     @Value("${rabbitmq.exchange.order-reward}")
     private String exchangeOrderReward;
@@ -88,9 +90,9 @@ public class OrderMessageService {
             channel.queueBind(orderQueue, exchangeOrderDelivery, orderRoutingKey);
 
             // 声明订单微服务和结算微服务通信的交换机
-            channel.exchangeDeclare(exchangeOrderSettlement, BuiltinExchangeType.FANOUT, true, false, null);
+            channel.exchangeDeclare(sendExchangeOrderSettlement, BuiltinExchangeType.FANOUT, true, false, null);
             // 将队列绑定在交换机上,routingKey是key.order
-            channel.queueBind(orderQueue, exchangeOrderSettlement, orderRoutingKey);
+            channel.queueBind(orderQueue, receiveExchangeOrderSettlement, orderRoutingKey);
 
             // 声明订单微服务和积分微服务通信的交换机
             channel.exchangeDeclare(exchangeOrderReward, BuiltinExchangeType.TOPIC, true, false, null);
@@ -101,7 +103,12 @@ public class OrderMessageService {
             channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {
             });
             while (true) {
-
+                // 消息确认
+                // 是否被路由：消息返回机制
+                // 消费端限流
+                // 消费端消费确认
+                // 消息过期机制
+                // 死信队列
             }
         }
     }
@@ -120,31 +127,26 @@ public class OrderMessageService {
         try {
             // 将消息体反序列化成DTO
             OrderMessageDTO orderMessage = objectMapper.readValue(messageBody, OrderMessageDTO.class);
-            // 从数据库中读取订单
-            QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("id", orderMessage.getOrderId());
-            OrderDetail order = orderDetailMapper.selectOne(queryWrapper);
-
+            // 新建一个连接
+            Connection connection = connectionFactory.newConnection();
+            Channel channel = connection.createChannel();
             // 通过订单状态判断是哪个微服务发来的消息
-            switch (order.getStatus()) {
+            switch (orderMessage.getOrderStatus()) {
                 // 订单刚创建商家还未确认 是商家发来的消息
                 case ORDER_CREATING:
                     // 商家已确认订单并将价格写入
                     if (orderMessage.getConfirmed() && null != orderMessage.getPrice()) {
                         UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.RESTAURANT_CONFIRMED)
+                        updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.RESTAURANT_CONFIRMED)
                                 .set("price", orderMessage.getPrice());
                         orderDetailMapper.update(null, updateWrapper);
                         // 给骑手微服务发送消息
-                        try (Connection connection = connectionFactory.newConnection();
-                             Channel channel = connection.createChannel()) {
-                            // 将DTO转换成Json字符串
-                            String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                            channel.basicPublish(exchangeOrderDelivery, deliveryRoutingKey, null, messageToSend.getBytes());
-                        }
+                        orderMessage.setOrderStatus(OrderStatus.RESTAURANT_CONFIRMED);
+                        // 将DTO转换成Json字符串
+                        String messageToSend = objectMapper.writeValueAsString(orderMessage);
+                        channel.basicPublish(exchangeOrderDelivery, deliveryRoutingKey, null, messageToSend.getBytes());
                     } else {
-                        order.setStatus(OrderStatus.FAILED);
-                        orderDetailMapper.updateById(order);
+                        updateOrderFailed(orderMessage.getOrderId());
                     }
                     break;
                 // 骑手已确认后 消息的状态还没来得及改为DELIVERYMAN_CONFIRMED，所以还是RESTAURANT_CONFIRMED
@@ -153,18 +155,16 @@ public class OrderMessageService {
                     if (null != orderMessage.getDeliverymanId()) {
                         // 更新数据库的订单状态和骑手信息
                         UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.DELIVERYMAN_CONFIRMED)
+                        updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.DELIVERYMAN_CONFIRMED)
                                 .set("deliveryman_id", orderMessage.getDeliverymanId());
                         orderDetailMapper.update(null, updateWrapper);
+                        orderMessage.setOrderStatus(OrderStatus.DELIVERYMAN_CONFIRMED);
                         // 向结算微服务发送一条消息 发送的方式是扇形广播
-                        try (Connection connection = connectionFactory.newConnection();
-                             Channel channel = connection.createChannel()) {
-                            String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                            channel.basicPublish(exchangeOrderSettlement, settlementRoutingKey, null, messageToSend.getBytes());
-                        }
+                        String messageToSend = objectMapper.writeValueAsString(orderMessage);
+                        channel.basicPublish(sendExchangeOrderSettlement, settlementRoutingKey, null, messageToSend.getBytes());
                     } else {
                         // 如果没有骑手，则直接更新订单的状态为失败
-                        updateOrderFailed(order.getId());
+                        updateOrderFailed(orderMessage.getOrderId());
                     }
                     break;
                 case DELIVERYMAN_CONFIRMED:
@@ -172,18 +172,16 @@ public class OrderMessageService {
                     if (null != orderMessage.getSettlementId()) {
                         // 更新数据库的订单状态和结算信息
                         UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.SETTLEMENT_CONFIRMED)
+                        updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.SETTLEMENT_CONFIRMED)
                                 .set("settlement_id", orderMessage.getSettlementId());
                         orderDetailMapper.update(null, updateWrapper);
+                        orderMessage.setOrderStatus(OrderStatus.SETTLEMENT_CONFIRMED);
                         // 向积分微服务发送一条消息 发送的方式是topic
-                        try (Connection connection = connectionFactory.newConnection();
-                             Channel channel = connection.createChannel()) {
-                            String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                            channel.basicPublish(exchangeOrderReward, rewardRoutingKey, null, messageToSend.getBytes());
-                        }
+                        String messageToSend = objectMapper.writeValueAsString(orderMessage);
+                        channel.basicPublish(exchangeOrderReward, rewardRoutingKey, null, messageToSend.getBytes());
                     } else {
                         // 如果没有结算id，则直接更新订单的状态为失败
-                        updateOrderFailed(order.getId());
+                        updateOrderFailed(orderMessage.getOrderId());
                     }
                     break;
                 case SETTLEMENT_CONFIRMED:
@@ -191,12 +189,12 @@ public class OrderMessageService {
                     if (null != orderMessage.getRewardId()) {
                         // 更新数据库的订单状态和积分信息
                         UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                        updateWrapper.eq("id", order.getId()).set("status", OrderStatus.ORDER_CREATED)
+                        updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.ORDER_CREATED)
                                 .set("reward_id", orderMessage.getRewardId());
                         orderDetailMapper.update(null, updateWrapper);
                     } else {
                         // 如果没有积分id，则直接更新订单的状态为失败
-                        updateOrderFailed(order.getId());
+                        updateOrderFailed(orderMessage.getOrderId());
                     }
                     break;
                 default:

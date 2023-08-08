@@ -19,6 +19,8 @@
         <module>order-service</module>
         <module>restaurant-service</module>
         <module>delivery-service</module>
+        <module>settlement-service</module>
+        <module>reward-service</module>
     </modules>
 
     <properties>

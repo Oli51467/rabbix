@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.delivery.config;
+package com.sdu.rabbitmq.settlement.config;
 
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
