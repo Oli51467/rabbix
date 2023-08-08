@@ -46,7 +46,7 @@ public class OrderMessageService {
     private RestaurantMapper restaurantMapper;
 
     @Async
-    public void handleMessage() throws IOException, TimeoutException {
+    public void handleMessage() throws IOException, TimeoutException, InterruptedException {
         log.info("restaurant start listening message...");
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost(LOCALHOST);
@@ -81,10 +81,10 @@ public class OrderMessageService {
             OrderMessageDTO orderMessage = objectMapper.readValue(messageBody, OrderMessageDTO.class);
             // 根据产品id从数据库获取到订单中的产品
             Product product = productMapper.selectById(orderMessage.getProductId());
-            log.info("onMessage: product info:{}", product);
+            log.info("Restaurant onMessage---product info: {}", product);
             // 根据产品中的餐厅id获取到餐厅信息
             Restaurant restaurant = restaurantMapper.selectById(product.getRestaurantId());
-            log.info("onMessage: restaurant info:{}", restaurant);
+            log.info("Restaurant onMessage---restaurant info: {}", restaurant);
             // 确定商品没有下架并且餐厅正常营业
             if (product.getStatus() == ProductStatus.AVAILABLE && restaurant.getStatus() == RestaurantStatus.OPEN) {
                 orderMessage.setConfirmed(true);
@@ -92,7 +92,7 @@ public class OrderMessageService {
             } else {
                 orderMessage.setConfirmed(false);
             }
-            log.info("restaurant send message---OrderMessage: {}", orderMessage);
+            log.info("Restaurant send message---OrderMessage: {}", orderMessage);
             // 确认无误后，将消息回发给订单服务
             try (Connection connection = connectionFactory.newConnection();
                  Channel channel = connection.createChannel()) {

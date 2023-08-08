@@ -17,8 +17,6 @@ public class Deliveryman {
 
     private String name;
 
-    private String district;
-
     private DeliverymanStatus status;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")

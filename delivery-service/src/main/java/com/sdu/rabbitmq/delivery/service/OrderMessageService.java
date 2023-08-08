@@ -29,9 +29,6 @@ public class OrderMessageService {
 
     ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${rabbitmq.exchange.order-restaurant}")
-    private String exchangeOrderRestaurant;
-
     @Value("${rabbitmq.exchange.order-delivery}")
     private String exchangeOrderDelivery;
 
@@ -45,7 +42,7 @@ public class OrderMessageService {
     private String deliveryQueue;
 
     @Async
-    public void handleMessage() throws IOException, TimeoutException {
+    public void handleMessage() throws IOException, TimeoutException, InterruptedException {
         log.info("delivery service start listening message");
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost(LOCALHOST);
@@ -70,7 +67,7 @@ public class OrderMessageService {
 
     DeliverCallback deliverCallback = (consumerTag, message) -> {
         String messageBody = new String(message.getBody());
-        log.info("deliverCallback: messageBody: {}", messageBody);
+        log.info("Deliver onMessage---messageBody: {}", messageBody);
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost(LOCALHOST);
 
@@ -82,12 +79,12 @@ public class OrderMessageService {
             List<Deliveryman> deliverymen = deliverymanMapper.selectList(queryWrapper);
             // 随机选择一个空闲的骑手，将该订单分配给该骑手
             orderMessage.setDeliverymanId(deliverymen.get(0).getId());
-            log.info("delivery message:{}", orderMessage);
+            log.info("Delivery send message---OrderMessage: {}", orderMessage);
             // 将信息发送给订单服务，说明匹配到了骑手
             try (Connection connection = connectionFactory.newConnection();
                  Channel channel = connection.createChannel()) {
                 String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                channel.basicPublish(exchangeOrderRestaurant, orderRoutingKey, null, messageToSend.getBytes());
+                channel.basicPublish(exchangeOrderDelivery, orderRoutingKey, null, messageToSend.getBytes());
             }
         } catch (JsonProcessingException | TimeoutException e) {
             log.error(e.getMessage(), e);

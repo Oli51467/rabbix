@@ -59,7 +59,7 @@ public class OrderMessageService {
      * 声明消息队列、交换机、绑定、消息的处理
      */
     @Async
-    public void handleMessage() throws IOException, TimeoutException {
+    public void handleMessage() throws IOException, TimeoutException, InterruptedException {
         log.info("order service start listening message");
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost(LOCALHOST);
@@ -83,7 +83,7 @@ public class OrderMessageService {
             // 绑定监听回调
             channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {});
             while (true) {
-
+                Thread.sleep(10000000);
             }
         }
     }
@@ -104,7 +104,7 @@ public class OrderMessageService {
             OrderMessageDTO orderMessageDTO = objectMapper.readValue(messageBody, OrderMessageDTO.class);
             // 从数据库中读取订单
             QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("order_id", orderMessageDTO.getOrderId());
+            queryWrapper.eq("id", orderMessageDTO.getOrderId());
             OrderDetail orderDetail = orderDetailMapper.selectOne(queryWrapper);
 
             // 通过订单状态判断是哪个微服务发来的消息

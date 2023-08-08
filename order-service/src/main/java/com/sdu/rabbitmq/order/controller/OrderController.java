@@ -19,7 +19,6 @@ public class OrderController {
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public void createOrder(@RequestBody CreateOrderVO orderCreateDTO) throws IOException, TimeoutException {
-        log.info("createOrder:orderCreateDTO:{}", orderCreateDTO);
         orderService.createOrder(orderCreateDTO);
     }
 }
