@@ -2,7 +2,7 @@ package com.sdu.rabbitmq.order.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
-import com.sdu.rabbitmq.order.repository.OrderDetailDAO;
+import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +15,7 @@ import javax.annotation.Resource;
 public class OrderService {
 
     @Resource
-    private OrderDetailDAO orderDetailDAO;
+    private OrderDetailMapper orderDetailMapper;
 
     @Resource
     RabbitTemplate rabbitTemplate;

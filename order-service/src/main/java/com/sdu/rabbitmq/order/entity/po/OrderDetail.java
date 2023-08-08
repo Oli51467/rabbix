@@ -1,5 +1,6 @@
-package com.sdu.rabbitmq.order.domain;
+package com.sdu.rabbitmq.order.entity.po;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.sdu.rabbitmq.order.common.enums.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,5 +32,6 @@ public class OrderDetail {
 
     private BigDecimal price;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
     private Date createTime;
 }
