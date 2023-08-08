@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.TimeoutException;
 
+import static com.sdu.rabbitmq.order.common.constants.LOCALHOST;
+
 @Service("OrderService")
 @Slf4j
 public class OrderService {
@@ -34,8 +36,8 @@ public class OrderService {
     @Value("${rabbitmq.restaurant-routing-key}")
     public String restaurantRoutingKey;
 
-    @Value("${rabbitmq.deliveryman-routing-key}")
-    public String deliverymanRoutingKey;
+    @Value("${rabbitmq.delivery-routing-key}")
+    public String deliveryRoutingKey;
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,7 +60,7 @@ public class OrderService {
 
         // 建立连接并将订单信息发送到消息队列 给餐厅微服务发送消息
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("localhost");
+        connectionFactory.setHost(LOCALHOST);
 
         try (Connection connection = connectionFactory.newConnection();
              Channel channel = connection.createChannel()) {

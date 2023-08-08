@@ -17,6 +17,8 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+import static com.sdu.rabbitmq.order.common.constants.LOCALHOST;
+
 /**
  * 和rabbitmq消息处理相关的通信服务类
  */
@@ -30,8 +32,8 @@ public class OrderMessageService {
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String exchangeOrderRestaurant;
 
-    @Value("${rabbitmq.exchange.order-deliveryman}")
-    private String exchangeOrderDeliveryman;
+    @Value("${rabbitmq.exchange.order-delivery}")
+    private String exchangeOrderDelivery;
 
     @Value("${rabbitmq.order-queue}")
     private String orderQueue;
@@ -39,8 +41,8 @@ public class OrderMessageService {
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
 
-    @Value("${rabbitmq.deliveryman-routing-key}")
-    public String deliverymanRoutingKey;
+    @Value("${rabbitmq.delivery-routing-key}")
+    public String deliveryRoutingKey;
 
     @Value("${rabbitmq.settlement-routing-key}")
     public String settlementRoutingKey;
@@ -58,8 +60,9 @@ public class OrderMessageService {
      */
     @Async
     public void handleMessage() throws IOException, TimeoutException {
+        log.info("order service start listening message");
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("127.0.0.1");
+        connectionFactory.setHost(LOCALHOST);
 
         try (Connection connection = connectionFactory.newConnection();
              Channel channel = connection.createChannel()) {
@@ -73,9 +76,9 @@ public class OrderMessageService {
             channel.queueBind(orderQueue, exchangeOrderRestaurant, orderRoutingKey);
 
             // 声明订单微服务和骑手微服务通信的交换机
-            channel.exchangeDeclare(exchangeOrderDeliveryman, BuiltinExchangeType.DIRECT, true,false,null);
+            channel.exchangeDeclare(exchangeOrderDelivery, BuiltinExchangeType.DIRECT, true,false,null);
             // 将队列绑定在交换机上,routingKey是key.order
-            channel.queueBind(orderQueue, exchangeOrderDeliveryman, orderRoutingKey);
+            channel.queueBind(orderQueue, exchangeOrderDelivery, orderRoutingKey);
 
             // 绑定监听回调
             channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {});
@@ -94,7 +97,7 @@ public class OrderMessageService {
         String messageBody = new String(message.getBody());
 
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("127.0.0.1");
+        connectionFactory.setHost(LOCALHOST);
 
         try {
             // 将消息体反序列化成DTO
@@ -118,7 +121,7 @@ public class OrderMessageService {
                              Channel channel = connection.createChannel()) {
                             // 将DTO转换成Json字符串
                             String messageToSend = objectMapper.writeValueAsString(orderMessageDTO);
-                            channel.basicPublish(exchangeOrderDeliveryman, deliverymanRoutingKey, null, messageToSend.getBytes());
+                            channel.basicPublish(exchangeOrderDelivery, deliveryRoutingKey, null, messageToSend.getBytes());
                         }
                     } else {
                         orderDetail.setStatus(OrderStatus.FAILED);
@@ -139,7 +142,7 @@ public class OrderMessageService {
                     break;
             }
         } catch (JsonProcessingException | TimeoutException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     };
 }

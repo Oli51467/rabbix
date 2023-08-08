@@ -19,6 +19,8 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+import static com.sdu.rabbitmq.restaurant.common.constants.LOCALHOST;
+
 @Service("OrderMessageService")
 @Slf4j
 public class OrderMessageService {
@@ -47,19 +49,19 @@ public class OrderMessageService {
     public void handleMessage() throws IOException, TimeoutException {
         log.info("restaurant start listening message...");
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("localhost");
+        connectionFactory.setHost(LOCALHOST);
         try (Connection connection = connectionFactory.newConnection();
              Channel channel = connection.createChannel()) {
 
-            // 声明队列
+            // 声明餐厅服务的监听队列
             channel.queueDeclare(restaurantQueue, true, false, false, null);
 
-            // 声明交换机
+            // 声明订单微服务和餐厅微服务通信的交换机
             channel.exchangeDeclare(exchangeOrderRestaurant, BuiltinExchangeType.DIRECT, true, false, null);
-
-            // 绑定
+            //将队列绑定在交换机上，routingKey是key.restaurant
             channel.queueBind(restaurantQueue, exchangeOrderRestaurant, restaurantRoutingKey);
 
+            // 绑定监听回调
             channel.basicConsume(restaurantQueue, true, deliverCallback, consumerTag -> {});
             while (true) {
 
@@ -72,7 +74,7 @@ public class OrderMessageService {
         String messageBody = new String(message.getBody());
         log.info("deliverCallback:messageBody: {}", messageBody);
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("localhost");
+        connectionFactory.setHost(LOCALHOST);
 
         try {
             // 解析Json数据
