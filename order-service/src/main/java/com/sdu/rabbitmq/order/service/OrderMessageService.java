@@ -1,21 +1,20 @@
 package com.sdu.rabbitmq.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.client.*;
 import com.sdu.rabbitmq.order.common.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+
 import java.io.IOException;
+
+import static com.sdu.rabbitmq.order.config.RabbitConfig.sendToRabbit;
 
 /**
  * 和rabbitmq消息处理相关的通信服务类
@@ -33,9 +32,6 @@ public class OrderMessageService {
     @Value("${rabbitmq.exchange.order-reward}")
     private String orderRewardExchange;
 
-    @Value("${rabbitmq.order-queue}")
-    private String orderQueue;
-
     @Value("${rabbitmq.delivery-routing-key}")
     public String deliveryRoutingKey;
 
@@ -48,46 +44,18 @@ public class OrderMessageService {
     @Resource
     private OrderDetailMapper orderDetailMapper;
 
-    @Autowired
-    private Channel channel;
-
     ObjectMapper objectMapper = new ObjectMapper();
-
-    /**
-     * 声明消息队列、交换机、绑定、消息的处理
-     */
-    @Async
-    public void handleMessage() throws IOException {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        log.info("order service start listening message");
-        // 绑定监听回调
-        channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {
-        });
-
-        while (true) {
-            // 消费端消费确认
-            // 消息过期机制
-            // 死信队列
-        }
-    }
 
     /**
      * 从mq接收到消息的回调
      * consumerTag 消费者类型
      * message Delivery类型的消息
      */
-    DeliverCallback deliverCallback = (consumerTag, message) -> {
-        String messageBody = new String(message.getBody());
-
+    public void handleMessage(OrderMessageDTO orderMessage) {
+        log.info("Order Service received: {}", orderMessage);
+        log.debug("Current order status: {}", orderMessage.getOrderStatus());
         try {
-            // 将消息体反序列化成DTO
-            OrderMessageDTO orderMessage = objectMapper.readValue(messageBody, OrderMessageDTO.class);
             // 通过订单状态判断是哪个微服务发来的消息
-            log.info(String.valueOf(orderMessage.getOrderStatus()));
             switch (orderMessage.getOrderStatus()) {
                 // 订单刚创建商家还未确认 是商家发来的消息
                 case ORDER_CREATING:
@@ -97,11 +65,12 @@ public class OrderMessageService {
                         updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.RESTAURANT_CONFIRMED)
                                 .set("price", orderMessage.getPrice());
                         orderDetailMapper.update(null, updateWrapper);
-                        // 给骑手微服务发送消息
+                        // 设置订单状态
                         orderMessage.setOrderStatus(OrderStatus.RESTAURANT_CONFIRMED);
                         // 将DTO转换成Json字符串
                         String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        channel.basicPublish(orderDeliveryExchange, deliveryRoutingKey, null, messageToSend.getBytes());
+                        // 给骑手微服务发送消息
+                        sendToRabbit(orderDeliveryExchange, deliveryRoutingKey, messageToSend);
                     } else {
                         updateOrderFailed(orderMessage.getOrderId());
                     }
@@ -115,10 +84,11 @@ public class OrderMessageService {
                         updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.DELIVERYMAN_CONFIRMED)
                                 .set("deliveryman_id", orderMessage.getDeliverymanId());
                         orderDetailMapper.update(null, updateWrapper);
+                        // 设置订单状态
                         orderMessage.setOrderStatus(OrderStatus.DELIVERYMAN_CONFIRMED);
                         // 向结算微服务发送一条消息 发送的方式是扇形广播
                         String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        channel.basicPublish(orderSettlementSendExchange, settlementRoutingKey, null, messageToSend.getBytes());
+                        sendToRabbit(orderSettlementSendExchange, settlementRoutingKey, messageToSend);
                     } else {
                         // 如果没有骑手，则直接更新订单的状态为失败
                         updateOrderFailed(orderMessage.getOrderId());
@@ -135,7 +105,7 @@ public class OrderMessageService {
                         orderMessage.setOrderStatus(OrderStatus.SETTLEMENT_CONFIRMED);
                         // 向积分微服务发送一条消息 发送的方式是topic
                         String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        channel.basicPublish(orderRewardExchange, rewardRoutingKey, null, messageToSend.getBytes());
+                        sendToRabbit(orderRewardExchange, rewardRoutingKey, messageToSend);
                     } else {
                         // 如果没有结算id，则直接更新订单的状态为失败
                         updateOrderFailed(orderMessage.getOrderId());
@@ -157,10 +127,10 @@ public class OrderMessageService {
                 default:
                     break;
             }
-        } catch (JsonProcessingException e) {
+        } catch (RuntimeException | IOException e) {
             log.error(e.getMessage(), e);
         }
-    };
+    }
 
     private void updateOrderFailed(Long orderId) {
         UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();

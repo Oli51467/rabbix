@@ -1,69 +1,69 @@
 package com.sdu.rabbitmq.order.config;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
+import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.service.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.support.converter.ClassMapper;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
-
 @Slf4j
 @Configuration
 public class RabbitConfig {
 
+    @Value("${rabbitmq.username}")
+    public String rabbitUsername;
+
+    @Value("${rabbitmq.password}")
+    public String rabbitPassword;
+
+    @Value("${rabbitmq.host}")
+    public String rabbitHost;
+
+    @Value("${rabbitmq.port}")
+    public Integer rabbitPort;
+
+    @Value("${rabbitmq.exchange.order-restaurant}")
+    public String orderRestaurantExchange;
+
+    @Value("${rabbitmq.exchange.order-delivery}")
+    public String orderDeliveryExchange;
+
+    @Value("${rabbitmq.exchange.order-settlement}")
+    public String orderSettlementSendExchange;
+
+    @Value("${rabbitmq.exchange.settlement-order}")
+    public String orderSettlementReceiveExchange;
+
+    @Value("${rabbitmq.exchange.order-reward}")
+    public String orderRewardExchange;
+
+    @Value("${rabbitmq.order-queue}")
+    public String orderQueue;
+
+    @Value("${rabbitmq.order-routing-key}")
+    public String orderRoutingKey;
+
     @Autowired
     private OrderMessageService orderMessageService;
 
-    @Value("${rabbitmq.username}")
-    private String rabbitUsername;
+    private static RabbitTemplate rabbitTemplate;
 
-    @Value("${rabbitmq.password}")
-    private String rabbitPassword;
-
-    @Value("${rabbitmq.host}")
-    private String rabbitHost;
-
-    @Value("${rabbitmq.port}")
-    private Integer rabbitPort;
-
-    @Value("${rabbitmq.exchange.order-restaurant}")
-    private String orderRestaurantExchange;
-
-    @Value("${rabbitmq.exchange.order-delivery}")
-    private String orderDeliveryExchange;
-
-    @Value("${rabbitmq.exchange.order-settlement}")
-    private String orderSettlementSendExchange;
-
-    @Value("${rabbitmq.exchange.settlement-order}")
-    private String orderSettlementReceiveExchange;
-
-    @Value("${rabbitmq.exchange.order-reward}")
-    private String orderRewardExchange;
-
-    @Value("${rabbitmq.order-queue}")
-    private String orderQueue;
-
-    @Value("${rabbitmq.order-routing-key}")
-    private String orderRoutingKey;
-
-    @Value("${rabbitmq.delivery-routing-key}")
-    public String deliveryRoutingKey;
-
-    @Value("${rabbitmq.settlement-routing-key}")
-    public String settlementRoutingKey;
-
-    @Value("${rabbitmq.reward-routing-key}")
-    public String rewardRoutingKey;
+    @Autowired
+    public void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
+        RabbitConfig.rabbitTemplate = rabbitTemplate;
+    }
 
     /* -------------------Order to Restaurant-------------------*/
     @Bean
@@ -120,34 +120,87 @@ public class RabbitConfig {
     }
 
     @Bean
-    public org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory() {
+    public ConnectionFactory connectionFactory() {
         // 初始化amqp包的连接工厂
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
         connectionFactory.setHost(rabbitHost);
         connectionFactory.setPort(rabbitPort);
         connectionFactory.setUsername(rabbitUsername);
         connectionFactory.setPassword(rabbitPassword);
+        // 设置开启返回和确认的回调
+        connectionFactory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
+        connectionFactory.setPublisherReturns(true);
         connectionFactory.createConnection();
         return connectionFactory;
     }
 
     @Bean
-    public RabbitAdmin rabbitAdmin(org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory) {
+    public RabbitAdmin rabbitAdmin(@Autowired ConnectionFactory connectionFactory) {
         RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
         rabbitAdmin.setAutoStartup(true);
         return rabbitAdmin;
     }
 
-    @Autowired
-    public void startListenMessage() throws IOException {
-        orderMessageService.handleMessage();
+    @Bean
+    public RabbitTemplate rabbitTemplate(@Autowired ConnectionFactory connectionFactory) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        // 设置托管状态
+        rabbitTemplate.setMandatory(true);
+        // 设置消息返回的回调
+        rabbitTemplate.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
+            log.info("Return Callback---message: {}, replyCode: {}, replyText: {}, exchange: {}, routingKey: {}",
+                    message, replyCode, replyText, exchange, routingKey);
+        });
+        // 设置确认消息从RabbitMQ发出的回调
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+            if (ack) {
+                log.info("RabbitMQ confirm send success");
+            } else {
+                log.error("RabbitMQ confirm send failed");
+                // TODO:根据CorrelationData的信息将订单状态设置为失败
+            }
+            log.info("Confirm Callback---correlationData: {}, ack: {}, cause: {}", correlationData, ack, cause);
+        });
+        return rabbitTemplate;
     }
 
     @Bean
-    public Channel rabbitChannel() throws IOException, TimeoutException {
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(rabbitHost);
-        Connection connection = connectionFactory.newConnection();
-        return connection.createChannel();
+    public SimpleMessageListenerContainer messageListenerContainer(@Autowired ConnectionFactory connectionFactory) {
+        SimpleMessageListenerContainer messageListenerContainer = new SimpleMessageListenerContainer(connectionFactory);
+        // 设置要监听哪几个队列
+        messageListenerContainer.setQueueNames(orderQueue);
+        // 设置同时有几个消费者线程可消费这个队列 相当于线程池的线程数
+        messageListenerContainer.setConcurrentConsumers(3);
+        messageListenerContainer.setMaxConcurrentConsumers(5);
+        // 设置收到消息后的确认方式 手动确认/自动确认
+        messageListenerContainer.setAcknowledgeMode(AcknowledgeMode.AUTO);
+        // 使用适配器模式优雅调用service服务设置收到消息的回调 设置代理为服务类
+        MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(orderMessageService);
+        // 将[]byte格式转化为DTO 需要使用MessageConverter的实现类
+        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+        converter.setClassMapper(new ClassMapper() {
+            @Override
+            public void fromClass(@NotNull Class<?> aClass, @NotNull MessageProperties messageProperties) {}
+
+            @NotNull
+            @Override
+            public Class<?> toClass(@NotNull MessageProperties messageProperties) {
+                return OrderMessageDTO.class;
+            }
+        });
+
+        // 设置类型转换器
+        messageListenerAdapter.setMessageConverter(converter);
+        messageListenerContainer.setMessageListener(messageListenerAdapter);
+        // 设置消费端限流
+        messageListenerContainer.setPrefetchCount(5);
+        return messageListenerContainer;
+    }
+
+    public static void sendToRabbit(String exchange, String routingKey, String messageToSend) {
+        MessageProperties messageProperties = new MessageProperties();
+
+        Message message = new Message(messageToSend.getBytes(), messageProperties);
+        rabbitTemplate.send(exchange, routingKey, message);
     }
 }

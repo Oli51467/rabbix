@@ -44,3 +44,27 @@
 2. RabbitTemplate收发消息
 3. RabbitAdmin声明队列和交换机
 4. SpringBootConfig支持RabbitMQ连接
+
+##### SimpleMessageListenerContainer
+
+1.设置同时监听多个队列、自动启动、自动配置RabbitMQ
+
+2.可设置消费者数量（最大数量、最小数量、批量消费）
+
+3.设置消息确认模式、是否重回队列、异常捕获
+
+4.设置是否独占、消费者属性
+
+5.设置具体的监听器、消息转换器等
+
+6.支持动态设置，运行中修改监听器的配置
+
+##### 设计模式
+
+- 单例模式
+- 适配器模式 MessageListenerAdapter
+
+##### Spring工具
+
+- MessageConverter
+- RabbitListener注解 可嵌套@Exchange @Queue @QueueBinding

@@ -1,15 +1,16 @@
 package com.sdu.rabbitmq.order.service;
 
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Channel;
 import com.sdu.rabbitmq.order.common.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,9 @@ public class OrderService {
     @Resource
     private OrderDetailMapper orderDetailMapper;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String exchangeOrderRestaurant;
 
@@ -37,12 +41,9 @@ public class OrderService {
     @Value("${rabbitmq.delivery-routing-key}")
     public String deliveryRoutingKey;
 
-    @Autowired
-    private Channel channel;
-
     ObjectMapper objectMapper = new ObjectMapper();
 
-    public void createOrder(CreateOrderVO createOrderVO) throws IOException, InterruptedException {
+    public void createOrder(CreateOrderVO createOrderVO) throws IOException {
         log.info("createOrder:orderCreateVO: {}", createOrderVO);
         // 创建订单 设置订单状态为创建中
         OrderDetail order = new OrderDetail();
@@ -60,22 +61,18 @@ public class OrderService {
         orderMessage.setAccountId(order.getAccountId());
         orderMessage.setOrderStatus(OrderStatus.ORDER_CREATING);
 
-        // 建立连接并将订单信息发送到消息队列 给餐厅微服务发送消息
-        channel.confirmSelect();
-        // 将DTO转换成Json字符串然后发送给商家微服务
-        AMQP.BasicProperties properties = new AMQP.BasicProperties().builder().expiration("15000").build();
+        // 将订单信息发送到消息队列 给餐厅微服务发送消息
         String messageToSend = objectMapper.writeValueAsString(orderMessage);
-        channel.basicPublish(exchangeOrderRestaurant, restaurantRoutingKey, null, messageToSend.getBytes());
+        MessageProperties messageProperties = new MessageProperties();
+
         // 设置单条消息的过期时间
-        // 单条同步发送端确认机制
-        if (channel.waitForConfirms()) {
-            log.info("RabbitMQ confirm send success");
-        } else {
-            // 发送失败后续的服务就不会收到，所以修改数据库的状态不会影响业务
-            UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-            updateWrapper.eq("id", order.getId()).set("status", OrderStatus.FAILED);
-            orderDetailMapper.update(null, updateWrapper);
-            log.error("RabbitMQ confirm send failed");
-        }
+        messageProperties.setExpiration("15000");
+        Message message = new Message(messageToSend.getBytes(), messageProperties);
+
+        // 设置CorrelationData
+        CorrelationData correlationData = new CorrelationData();
+        correlationData.setId(orderMessage.getOrderId().toString());
+
+        rabbitTemplate.send(exchangeOrderRestaurant, restaurantRoutingKey, message, correlationData);
     }
 }
