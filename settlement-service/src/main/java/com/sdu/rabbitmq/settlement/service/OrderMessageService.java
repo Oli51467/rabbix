@@ -8,6 +8,7 @@ import com.sdu.rabbitmq.settlement.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.settlement.entity.po.Settlement;
 import com.sdu.rabbitmq.settlement.repository.SettlementMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -16,9 +17,7 @@ import javax.annotation.Resource;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.concurrent.TimeoutException;
 
-import static com.sdu.rabbitmq.settlement.common.constants.LOCALHOST;
 import static com.sdu.rabbitmq.settlement.util.SnowUtil.getSnowflakeNextId;
 
 @Service("OrderMessageService")
@@ -29,10 +28,10 @@ public class OrderMessageService {
     private SettlementMapper settlementMapper;
 
     @Value("${rabbitmq.exchange.order-settlement}")
-    private String receiveExchangeOrderSettlement;
+    private String orderSettlementReceiveExchange;
 
     @Value("${rabbitmq.exchange.settlement-order}")
-    private String sendExchangeOrderSettlement;
+    private String orderSettlementSendExchange;
 
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
@@ -43,36 +42,33 @@ public class OrderMessageService {
     @Value("${rabbitmq.settlement-queue}")
     private String settlementQueue;
 
+    @Autowired
+    private Channel channel;
+
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Async
-    public void handleMessage() throws IOException, TimeoutException {
+    public void handleMessage() throws IOException {
         log.info("Settlement service start listening message");
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(LOCALHOST);
-        try (Connection connection = connectionFactory.newConnection();
-             Channel channel = connection.createChannel()) {
-            // 声明结算微服务的监听队列
-            channel.queueDeclare(settlementQueue, true, false, false, null);
+        // 声明结算微服务的监听队列
+        channel.queueDeclare(settlementQueue, true, false, false, null);
 
-            // 声明订单微服务和结算微服务通信的交换机
-            channel.exchangeDeclare(sendExchangeOrderSettlement, BuiltinExchangeType.FANOUT, true, false, null);
-            // 将队列绑定在交换机上,routingKey是key.settlement
-            channel.queueBind(settlementQueue, receiveExchangeOrderSettlement, settlementRoutingKey);
+        // 声明订单微服务和结算微服务通信的交换机
+        channel.exchangeDeclare(orderSettlementSendExchange, BuiltinExchangeType.FANOUT, true, false, null);
+        // 将队列绑定在交换机上,routingKey是key.settlement
+        channel.queueBind(settlementQueue, orderSettlementReceiveExchange, settlementRoutingKey);
 
-            // 绑定监听回调
-            channel.basicConsume(settlementQueue, true, deliverCallback, consumerTag -> {});
-            while (true) {
+        // 绑定监听回调
+        channel.basicConsume(settlementQueue, true, deliverCallback, consumerTag -> {
+        });
+        while (true) {
 
-            }
         }
     }
 
     DeliverCallback deliverCallback = (consumerTag, message) -> {
         String messageBody = new String(message.getBody());
         log.info("settlement onMessage---messageBody: {}", messageBody);
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(LOCALHOST);
         try {
             OrderMessageDTO orderMessage = objectMapper.readValue(messageBody, OrderMessageDTO.class);
             log.info("Settlement handle completed---orderMessage: {}", orderMessage);
@@ -85,13 +81,9 @@ public class OrderMessageService {
             settlementMapper.insert(settlement);
             orderMessage.setSettlementId(settlement.getId());
             log.info("settlement send---orderMessage: {}", orderMessage);
-
-            try (Connection connection = connectionFactory.newConnection();
-                 Channel channel = connection.createChannel()) {
-                String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                channel.basicPublish(sendExchangeOrderSettlement, orderRoutingKey, null, messageToSend.getBytes());
-            }
-        } catch (JsonProcessingException | TimeoutException e) {
+            String messageToSend = objectMapper.writeValueAsString(orderMessage);
+            channel.basicPublish(orderSettlementSendExchange, orderRoutingKey, null, messageToSend.getBytes());
+        } catch (JsonProcessingException e) {
             log.error(e.getMessage(), e);
         }
     };

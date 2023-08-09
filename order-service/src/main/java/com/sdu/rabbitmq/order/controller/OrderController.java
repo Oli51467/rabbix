@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @RestController
@@ -18,7 +17,7 @@ public class OrderController {
     private OrderService orderService;
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public void createOrder(@RequestBody CreateOrderVO orderCreateDTO) throws IOException, TimeoutException {
+    public void createOrder(@RequestBody CreateOrderVO orderCreateDTO) throws IOException, InterruptedException {
         orderService.createOrder(orderCreateDTO);
     }
 }

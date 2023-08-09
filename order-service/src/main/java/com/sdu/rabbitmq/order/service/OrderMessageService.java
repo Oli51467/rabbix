@@ -9,15 +9,13 @@ import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
-
-import static com.sdu.rabbitmq.order.common.constants.LOCALHOST;
 
 /**
  * 和rabbitmq消息处理相关的通信服务类
@@ -26,23 +24,20 @@ import static com.sdu.rabbitmq.order.common.constants.LOCALHOST;
 @Slf4j
 public class OrderMessageService {
 
-    @Value("${rabbitmq.exchange}")
-    public String exchangeName;
-
     @Value("${rabbitmq.exchange.order-restaurant}")
-    private String exchangeOrderRestaurant;
+    private String orderRestaurantExchange;
 
     @Value("${rabbitmq.exchange.order-delivery}")
-    private String exchangeOrderDelivery;
+    private String orderDeliveryExchange;
 
     @Value("${rabbitmq.exchange.order-settlement}")
-    private String sendExchangeOrderSettlement;
+    private String orderSettlementSendExchange;
 
     @Value("${rabbitmq.exchange.settlement-order}")
-    private String receiveExchangeOrderSettlement;
+    private String orderSettlementReceiveExchange;
 
     @Value("${rabbitmq.exchange.order-reward}")
-    private String exchangeOrderReward;
+    private String orderRewardExchange;
 
     @Value("${rabbitmq.order-queue}")
     private String orderQueue;
@@ -62,54 +57,48 @@ public class OrderMessageService {
     @Resource
     private OrderDetailMapper orderDetailMapper;
 
+    @Autowired
+    private Channel channel;
+
     ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 声明消息队列、交换机、绑定、消息的处理
      */
     @Async
-    public void handleMessage() throws IOException, TimeoutException {
+    public void handleMessage() throws IOException {
         log.info("order service start listening message");
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(LOCALHOST);
 
-        try (Connection connection = connectionFactory.newConnection();
-             Channel channel = connection.createChannel()) {
+        // 声明订单微服务的监听队列
+        channel.queueDeclare(orderQueue, true, false, false, null);
 
-            // 声明订单微服务的监听队列
-            channel.queueDeclare(orderQueue, true, false, false, null);
+        // 声明订单微服务和餐厅微服务通信的交换机
+        channel.exchangeDeclare(orderRestaurantExchange, BuiltinExchangeType.DIRECT, true, false, null);
+        // 将队列绑定在交换机上，routingKey是key.order
+        channel.queueBind(orderQueue, orderRestaurantExchange, orderRoutingKey);
 
-            // 声明订单微服务和餐厅微服务通信的交换机
-            channel.exchangeDeclare(exchangeOrderRestaurant, BuiltinExchangeType.DIRECT, true, false, null);
-            // 将队列绑定在交换机上，routingKey是key.order
-            channel.queueBind(orderQueue, exchangeOrderRestaurant, orderRoutingKey);
+        // 声明订单微服务和骑手微服务通信的交换机
+        channel.exchangeDeclare(orderDeliveryExchange, BuiltinExchangeType.DIRECT, true, false, null);
+        // 将队列绑定在交换机上,routingKey是key.order
+        channel.queueBind(orderQueue, orderDeliveryExchange, orderRoutingKey);
 
-            // 声明订单微服务和骑手微服务通信的交换机
-            channel.exchangeDeclare(exchangeOrderDelivery, BuiltinExchangeType.DIRECT, true, false, null);
-            // 将队列绑定在交换机上,routingKey是key.order
-            channel.queueBind(orderQueue, exchangeOrderDelivery, orderRoutingKey);
+        // 声明订单微服务和结算微服务通信的交换机
+        channel.exchangeDeclare(orderSettlementSendExchange, BuiltinExchangeType.FANOUT, true, false, null);
+        // 将队列绑定在交换机上,routingKey是key.order
+        channel.queueBind(orderQueue, orderSettlementReceiveExchange, orderRoutingKey);
 
-            // 声明订单微服务和结算微服务通信的交换机
-            channel.exchangeDeclare(sendExchangeOrderSettlement, BuiltinExchangeType.FANOUT, true, false, null);
-            // 将队列绑定在交换机上,routingKey是key.order
-            channel.queueBind(orderQueue, receiveExchangeOrderSettlement, orderRoutingKey);
+        // 声明订单微服务和积分微服务通信的交换机
+        channel.exchangeDeclare(orderRewardExchange, BuiltinExchangeType.TOPIC, true, false, null);
+        // 将队列绑定在交换机上,routingKey是key.order
+        channel.queueBind(orderQueue, orderRewardExchange, orderRoutingKey);
 
-            // 声明订单微服务和积分微服务通信的交换机
-            channel.exchangeDeclare(exchangeOrderReward, BuiltinExchangeType.TOPIC, true, false, null);
-            // 将队列绑定在交换机上,routingKey是key.order
-            channel.queueBind(orderQueue, exchangeOrderReward, orderRoutingKey);
-
-            // 绑定监听回调
-            channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {
-            });
-            while (true) {
-                // 消息确认
-                // 是否被路由：消息返回机制
-                // 消费端限流
-                // 消费端消费确认
-                // 消息过期机制
-                // 死信队列
-            }
+        // 绑定监听回调
+        channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {
+        });
+        while (true) {
+            // 消费端消费确认
+            // 消息过期机制
+            // 死信队列
         }
     }
 
@@ -121,16 +110,11 @@ public class OrderMessageService {
     DeliverCallback deliverCallback = (consumerTag, message) -> {
         String messageBody = new String(message.getBody());
 
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(LOCALHOST);
-
         try {
             // 将消息体反序列化成DTO
             OrderMessageDTO orderMessage = objectMapper.readValue(messageBody, OrderMessageDTO.class);
-            // 新建一个连接
-            Connection connection = connectionFactory.newConnection();
-            Channel channel = connection.createChannel();
             // 通过订单状态判断是哪个微服务发来的消息
+            log.info(String.valueOf(orderMessage.getOrderStatus()));
             switch (orderMessage.getOrderStatus()) {
                 // 订单刚创建商家还未确认 是商家发来的消息
                 case ORDER_CREATING:
@@ -144,7 +128,7 @@ public class OrderMessageService {
                         orderMessage.setOrderStatus(OrderStatus.RESTAURANT_CONFIRMED);
                         // 将DTO转换成Json字符串
                         String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        channel.basicPublish(exchangeOrderDelivery, deliveryRoutingKey, null, messageToSend.getBytes());
+                        channel.basicPublish(orderDeliveryExchange, deliveryRoutingKey, null, messageToSend.getBytes());
                     } else {
                         updateOrderFailed(orderMessage.getOrderId());
                     }
@@ -161,7 +145,7 @@ public class OrderMessageService {
                         orderMessage.setOrderStatus(OrderStatus.DELIVERYMAN_CONFIRMED);
                         // 向结算微服务发送一条消息 发送的方式是扇形广播
                         String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        channel.basicPublish(sendExchangeOrderSettlement, settlementRoutingKey, null, messageToSend.getBytes());
+                        channel.basicPublish(orderSettlementSendExchange, settlementRoutingKey, null, messageToSend.getBytes());
                     } else {
                         // 如果没有骑手，则直接更新订单的状态为失败
                         updateOrderFailed(orderMessage.getOrderId());
@@ -178,7 +162,7 @@ public class OrderMessageService {
                         orderMessage.setOrderStatus(OrderStatus.SETTLEMENT_CONFIRMED);
                         // 向积分微服务发送一条消息 发送的方式是topic
                         String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        channel.basicPublish(exchangeOrderReward, rewardRoutingKey, null, messageToSend.getBytes());
+                        channel.basicPublish(orderRewardExchange, rewardRoutingKey, null, messageToSend.getBytes());
                     } else {
                         // 如果没有结算id，则直接更新订单的状态为失败
                         updateOrderFailed(orderMessage.getOrderId());
@@ -200,7 +184,7 @@ public class OrderMessageService {
                 default:
                     break;
             }
-        } catch (JsonProcessingException | TimeoutException e) {
+        } catch (JsonProcessingException e) {
             log.error(e.getMessage(), e);
         }
     };

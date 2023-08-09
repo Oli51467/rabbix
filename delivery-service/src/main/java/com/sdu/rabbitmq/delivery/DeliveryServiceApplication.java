@@ -1,4 +1,4 @@
-package com.sdu;
+package com.sdu.rabbitmq.delivery;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
