@@ -34,8 +34,13 @@
    - TTL应该明显长于服务的平均重启时间，防止在服务重启的时候消息超时
    - TTL应长于业务高峰期时间
 2. 使用RabbitMQ死信队列，收集过期消息以供分析
-   
    - 怎样变成死信：1.消息被reject/nack，且requeue=false 2.TTL 3.队列达到最大长度被丢弃
    - 消息过期后会被直接丢弃，无法对系统运行异常发出警告
    - 死信队列：队列配置了DLX属性（Dead-Letter-Exchange）
    - 当一个消息变成死信后，能重新被发布到另一个交换机上，经过路由后会进入一个固定的队列
+
+##### Spring AMQP 特性
+1. 异步消息监听容器
+2. RabbitTemplate收发消息
+3. RabbitAdmin声明队列和交换机
+4. SpringBootConfig支持RabbitMQ连接

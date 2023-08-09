@@ -27,17 +27,11 @@ public class OrderMessageService {
     @Resource
     private SettlementMapper settlementMapper;
 
-    @Value("${rabbitmq.exchange.order-settlement}")
-    private String orderSettlementReceiveExchange;
-
     @Value("${rabbitmq.exchange.settlement-order}")
     private String orderSettlementSendExchange;
 
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
-
-    @Value("${rabbitmq.settlement-routing-key}")
-    private String settlementRoutingKey;
 
     @Value("${rabbitmq.settlement-queue}")
     private String settlementQueue;
@@ -50,13 +44,11 @@ public class OrderMessageService {
     @Async
     public void handleMessage() throws IOException {
         log.info("Settlement service start listening message");
-        // 声明结算微服务的监听队列
-        channel.queueDeclare(settlementQueue, true, false, false, null);
-
-        // 声明订单微服务和结算微服务通信的交换机
-        channel.exchangeDeclare(orderSettlementSendExchange, BuiltinExchangeType.FANOUT, true, false, null);
-        // 将队列绑定在交换机上,routingKey是key.settlement
-        channel.queueBind(settlementQueue, orderSettlementReceiveExchange, settlementRoutingKey);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         // 绑定监听回调
         channel.basicConsume(settlementQueue, true, deliverCallback, consumerTag -> {

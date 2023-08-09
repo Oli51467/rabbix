@@ -28,9 +28,6 @@ public class OrderMessageService {
     @Value("${rabbitmq.exchange.order-delivery}")
     private String orderDeliveryExchange;
 
-    @Value("${rabbitmq.delivery-routing-key}")
-    private String deliveryRoutingKey;
-
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
 
@@ -45,13 +42,11 @@ public class OrderMessageService {
     @Async
     public void handleMessage() throws IOException {
         log.info("delivery service start listening message");
-        // 声明骑手服务的监听队列
-        channel.queueDeclare(deliveryQueue, true, false, false, null);
-
-        // 声明订单微服务和骑手微服务通信的交换机
-        channel.exchangeDeclare(orderDeliveryExchange, BuiltinExchangeType.DIRECT, true, false, null);
-        //将队列绑定在交换机上，routingKey是key.restaurant
-        channel.queueBind(deliveryQueue, orderDeliveryExchange, deliveryRoutingKey);
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         // 绑定监听回调
         channel.basicConsume(deliveryQueue, true, deliverCallback, consumerTag -> {

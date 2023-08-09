@@ -24,26 +24,17 @@ import java.io.IOException;
 @Slf4j
 public class OrderMessageService {
 
-    @Value("${rabbitmq.exchange.order-restaurant}")
-    private String orderRestaurantExchange;
-
     @Value("${rabbitmq.exchange.order-delivery}")
     private String orderDeliveryExchange;
 
     @Value("${rabbitmq.exchange.order-settlement}")
     private String orderSettlementSendExchange;
 
-    @Value("${rabbitmq.exchange.settlement-order}")
-    private String orderSettlementReceiveExchange;
-
     @Value("${rabbitmq.exchange.order-reward}")
     private String orderRewardExchange;
 
     @Value("${rabbitmq.order-queue}")
     private String orderQueue;
-
-    @Value("${rabbitmq.order-routing-key}")
-    private String orderRoutingKey;
 
     @Value("${rabbitmq.delivery-routing-key}")
     public String deliveryRoutingKey;
@@ -67,34 +58,16 @@ public class OrderMessageService {
      */
     @Async
     public void handleMessage() throws IOException {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         log.info("order service start listening message");
-
-        // 声明订单微服务的监听队列
-        channel.queueDeclare(orderQueue, true, false, false, null);
-
-        // 声明订单微服务和餐厅微服务通信的交换机
-        channel.exchangeDeclare(orderRestaurantExchange, BuiltinExchangeType.DIRECT, true, false, null);
-        // 将队列绑定在交换机上，routingKey是key.order
-        channel.queueBind(orderQueue, orderRestaurantExchange, orderRoutingKey);
-
-        // 声明订单微服务和骑手微服务通信的交换机
-        channel.exchangeDeclare(orderDeliveryExchange, BuiltinExchangeType.DIRECT, true, false, null);
-        // 将队列绑定在交换机上,routingKey是key.order
-        channel.queueBind(orderQueue, orderDeliveryExchange, orderRoutingKey);
-
-        // 声明订单微服务和结算微服务通信的交换机
-        channel.exchangeDeclare(orderSettlementSendExchange, BuiltinExchangeType.FANOUT, true, false, null);
-        // 将队列绑定在交换机上,routingKey是key.order
-        channel.queueBind(orderQueue, orderSettlementReceiveExchange, orderRoutingKey);
-
-        // 声明订单微服务和积分微服务通信的交换机
-        channel.exchangeDeclare(orderRewardExchange, BuiltinExchangeType.TOPIC, true, false, null);
-        // 将队列绑定在交换机上,routingKey是key.order
-        channel.queueBind(orderQueue, orderRewardExchange, orderRoutingKey);
-
         // 绑定监听回调
         channel.basicConsume(orderQueue, true, deliverCallback, consumerTag -> {
         });
+
         while (true) {
             // 消费端消费确认
             // 消息过期机制

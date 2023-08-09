@@ -30,9 +30,6 @@ public class OrderMessageService {
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
 
-    @Value("${rabbitmq.reward-routing-key}")
-    private String rewardRoutingKey;
-
     @Value("${rabbitmq.reward-queue}")
     private String rewardQueue;
 
@@ -44,13 +41,11 @@ public class OrderMessageService {
     @Async
     public void handleMessage() throws IOException {
         log.info("Reward service start listening message");
-        // 声明积分微服务的监听队列
-        channel.queueDeclare(rewardQueue, true, false, false, null);
-
-        // 声明订单微服务和积分微服务通信的交换机
-        channel.exchangeDeclare(orderRewardExchange, BuiltinExchangeType.TOPIC, true, false, null);
-        // 将队列绑定在交换机上,routingKey是key.reward
-        channel.queueBind(rewardQueue, orderRewardExchange, rewardRoutingKey);
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         // 绑定监听回调
         channel.basicConsume(rewardQueue, true, deliverCallback, consumerTag -> {

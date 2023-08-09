@@ -42,9 +42,6 @@ public class OrderMessageService {
     @Value("${rabbitmq.dlx-queue}")
     private String dlxQueue;
 
-    @Value("${rabbitmq.restaurant-routing-key}")
-    private String restaurantRoutingKey;
-
     @Resource
     private ProductMapper productMapper;
 
@@ -56,30 +53,26 @@ public class OrderMessageService {
 
     @Async
     public void handleMessage() throws IOException {
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         log.info("restaurant start listening message...");
-        // 设置队列TTL
-        Map<String, Object> args = new HashMap<>();
-        args.put("x-message-ttl", 15000);
-        args.put("x-dead-letter-exchange", dlxExchange);
-        // 声明餐厅服务的监听队列
-        channel.queueDeclare(restaurantQueue, true, false, false, args);
+//        // 设置队列TTL
+//        Map<String, Object> args = new HashMap<>();
+//        args.put("x-message-ttl", 15000);
+//        args.put("x-dead-letter-exchange", dlxExchange);
 
-        // 声明订单微服务和餐厅微服务通信的交换机
-        channel.exchangeDeclare(orderRestaurantExchange, BuiltinExchangeType.DIRECT, true, false, null);
-        // 将队列绑定在交换机上，routingKey是key.restaurant
-        channel.queueBind(restaurantQueue, orderRestaurantExchange, restaurantRoutingKey);
-
-        // 声明死信队列通信交换机
-        channel.exchangeDeclare(dlxExchange, BuiltinExchangeType.TOPIC, true, false, null);
-        // 声明接收死信的队列
-        channel.queueDeclare(dlxQueue, true, false, false, null);
-        // 绑定死信队列和死信交换机
-        channel.queueBind(dlxQueue, dlxExchange, "#");
-
-        // 设置管道的QoS 最多只能从队列中拿5条消息来消费
-        channel.basicQos(5);
+//        // 声明接收死信的队列
+//        channel.queueDeclare(dlxQueue, true, false, false, null);
+//        // 绑定死信队列和死信交换机
+//        channel.queueBind(dlxQueue, dlxExchange, "#");
+//
+//        // 设置管道的QoS 最多只能从队列中拿5条消息来消费
+//        channel.basicQos(5);
         // 绑定监听回调
-        channel.basicConsume(restaurantQueue, false, deliverCallback, consumerTag -> {
+        channel.basicConsume(restaurantQueue, true, deliverCallback, consumerTag -> {
         });
         while (true) {
         }
@@ -124,9 +117,9 @@ public class OrderMessageService {
             });*/
 
             // 消费端手动消息确认
-            channel.basicAck(message.getEnvelope().getDeliveryTag(), false);
+            //channel.basicAck(message.getEnvelope().getDeliveryTag(), false);
             String messageToSend = objectMapper.writeValueAsString(orderMessage);
-            channel.basicPublish(orderRestaurantExchange, orderRoutingKey, true, null, messageToSend.getBytes());
+            channel.basicPublish(orderRestaurantExchange, orderRoutingKey, null, messageToSend.getBytes());
         } catch (JsonProcessingException e) {
             log.error(e.getMessage(), e);
         }
