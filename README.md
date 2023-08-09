@@ -1,4 +1,4 @@
-### RabbitMQ Stream
+### RabbitMQ Stream 可靠消息投递，实现分布式事务消息，保证消息可靠发送的工作流Demo
 
 ##### 工具及版本
 
@@ -68,3 +68,5 @@
 
 - MessageConverter
 - RabbitListener注解 可嵌套@Exchange @Queue @QueueBinding
+
+##### 分布式事务框架
