@@ -1,7 +1,7 @@
 package com.sdu.rabbitmq.reward.entity.po;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.sdu.rabbitmq.reward.common.enums.RewardStatus;
+import com.sdu.rabbitmq.reward.enums.RewardStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

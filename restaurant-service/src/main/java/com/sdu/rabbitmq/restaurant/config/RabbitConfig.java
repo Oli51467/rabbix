@@ -1,44 +1,29 @@
 package com.sdu.rabbitmq.restaurant.config;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
+import com.sdu.rabbitmq.restaurant.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.restaurant.service.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Exchange;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.support.converter.ClassMapper;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
-
-import static com.sdu.rabbitmq.restaurant.common.constants.LOCALHOST;
+import javax.annotation.Resource;
 
 @Slf4j
 @Configuration
 public class RabbitConfig {
 
-    @Autowired
+    @Resource
     OrderMessageService orderMessageService;
-
-    @Value("${rabbitmq.username}")
-    private String rabbitUsername;
-
-    @Value("${rabbitmq.password}")
-    private String rabbitPassword;
-
-    @Value("${rabbitmq.host}")
-    private String rabbitHost;
-
-    @Value("${rabbitmq.port}")
-    private Integer rabbitPort;
 
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String orderRestaurantExchange;
@@ -48,6 +33,13 @@ public class RabbitConfig {
 
     @Value("${rabbitmq.restaurant-queue}")
     private String restaurantQueue;
+
+    private static RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    public void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
+        RabbitConfig.rabbitTemplate = rabbitTemplate;
+    }
 
     @Bean
     public Exchange orderRestaurantExchange() {
@@ -65,34 +57,58 @@ public class RabbitConfig {
     }
 
     @Bean
-    public Channel rabbitChannel() throws IOException, TimeoutException {
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(LOCALHOST);
-        Connection connection = connectionFactory.newConnection();
-        return connection.createChannel();
+    public RabbitTemplate rabbitTemplate(@Autowired ConnectionFactory connectionFactory) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        // 设置托管状态
+        rabbitTemplate.setMandatory(true);
+        // 设置消息返回的回调
+        rabbitTemplate.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
+            log.info("Return Callback---message: {}, replyCode: {}, replyText: {}, exchange: {}, routingKey: {}",
+                    message, replyCode, replyText, exchange, routingKey);
+        });
+        // 设置确认消息从RabbitMQ发出的回调
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+            if (ack) {
+                log.info("RabbitMQ confirm send success");
+            } else {
+                log.error("RabbitMQ confirm send failed");
+                // TODO:根据CorrelationData的信息将订单状态设置为失败
+            }
+            log.info("Confirm Callback---correlationData: {}, ack: {}, cause: {}", correlationData, ack, cause);
+        });
+        return rabbitTemplate;
     }
 
     @Bean
-    public org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory() {
-        // 初始化amqp包的连接工厂
-        CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-        connectionFactory.setHost(rabbitHost);
-        connectionFactory.setPort(rabbitPort);
-        connectionFactory.setUsername(rabbitUsername);
-        connectionFactory.setPassword(rabbitPassword);
-        connectionFactory.createConnection();
-        return connectionFactory;
+    public SimpleMessageListenerContainer messageListenerContainer(@Autowired ConnectionFactory connectionFactory) {
+        SimpleMessageListenerContainer messageListenerContainer = new SimpleMessageListenerContainer(connectionFactory);
+        // 设置要监听哪几个队列
+        messageListenerContainer.setQueueNames(restaurantQueue);
+        // 使用适配器模式优雅调用service服务设置收到消息的回调 设置代理为服务类
+        MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(orderMessageService);
+        // 将[]byte格式转化为DTO 需要使用MessageConverter的实现类
+        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+        converter.setClassMapper(new ClassMapper() {
+            @Override
+            public void fromClass(@NotNull Class<?> aClass, @NotNull MessageProperties messageProperties) {}
+
+            @NotNull
+            @Override
+            public Class<?> toClass(@NotNull MessageProperties messageProperties) {
+                return OrderMessageDTO.class;
+            }
+        });
+
+        // 设置类型转换器
+        messageListenerAdapter.setMessageConverter(converter);
+        messageListenerContainer.setMessageListener(messageListenerAdapter);
+        return messageListenerContainer;
     }
 
-    @Bean
-    public RabbitAdmin rabbitAdmin(org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory) {
-        RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
-        rabbitAdmin.setAutoStartup(true);
-        return rabbitAdmin;
-    }
+    public static void sendToRabbit(String exchange, String routingKey, String messageToSend) {
+        MessageProperties messageProperties = new MessageProperties();
 
-    @Autowired
-    public void startListenMessage() throws IOException {
-        orderMessageService.handleMessage();
+        Message message = new Message(messageToSend.getBytes(), messageProperties);
+        rabbitTemplate.send(exchange, routingKey, message);
     }
 }

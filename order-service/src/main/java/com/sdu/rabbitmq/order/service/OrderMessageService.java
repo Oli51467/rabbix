@@ -2,7 +2,7 @@ package com.sdu.rabbitmq.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sdu.rabbitmq.order.common.enums.OrderStatus;
+import com.sdu.rabbitmq.order.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
@@ -53,7 +53,7 @@ public class OrderMessageService {
      */
     public void handleMessage(OrderMessageDTO orderMessage) {
         log.info("Order Service received: {}", orderMessage);
-        log.debug("Current order status: {}", orderMessage.getOrderStatus());
+        log.info("Current order status: {}", orderMessage.getOrderStatus());
         try {
             // 通过订单状态判断是哪个微服务发来的消息
             switch (orderMessage.getOrderStatus()) {

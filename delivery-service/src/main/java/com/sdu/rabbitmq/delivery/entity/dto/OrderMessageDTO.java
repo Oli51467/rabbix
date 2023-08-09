@@ -1,6 +1,6 @@
 package com.sdu.rabbitmq.delivery.entity.dto;
 
-import com.sdu.rabbitmq.delivery.common.enums.OrderStatus;
+import com.sdu.rabbitmq.delivery.enums.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

@@ -1,7 +1,7 @@
 package com.sdu.rabbitmq.settlement.entity.po;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.sdu.rabbitmq.settlement.common.enums.SettlementStatus;
+import com.sdu.rabbitmq.settlement.enums.SettlementStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

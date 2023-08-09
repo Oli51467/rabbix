@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.delivery.common.enums;
+package com.sdu.rabbitmq.delivery.enums;
 
 public enum DeliverymanStatus {
     AVAILABLE,

@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.settlement.common.enums;
+package com.sdu.rabbitmq.restaurant.enums;
 
 public enum OrderStatus {
     ORDER_CREATING,

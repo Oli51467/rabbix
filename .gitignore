@@ -32,8 +32,8 @@ build/
 ### VS Code ###
 .vscode/
 log
-order-service/src/main/resources/application.properties
-restaurant-service/src/main/resources/application.properties
-delivery-service/src/main/resources/application.properties
-settlement-service/src/main/resources/application.properties
-reward-service/src/main/resources/application.properties
+#order-service/src/main/resources/application.properties
+#restaurant-service/src/main/resources/application.properties
+#delivery-service/src/main/resources/application.properties
+#settlement-service/src/main/resources/application.properties
+#reward-service/src/main/resources/application.properties

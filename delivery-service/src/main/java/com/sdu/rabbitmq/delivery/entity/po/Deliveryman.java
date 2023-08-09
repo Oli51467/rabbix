@@ -1,7 +1,7 @@
 package com.sdu.rabbitmq.delivery.entity.po;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.sdu.rabbitmq.delivery.common.enums.DeliverymanStatus;
+import com.sdu.rabbitmq.delivery.enums.DeliverymanStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

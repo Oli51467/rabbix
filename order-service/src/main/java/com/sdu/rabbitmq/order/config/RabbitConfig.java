@@ -5,9 +5,7 @@ import com.sdu.rabbitmq.order.service.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -18,21 +16,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.Resource;
+
 @Slf4j
 @Configuration
 public class RabbitConfig {
-
-    @Value("${rabbitmq.username}")
-    public String rabbitUsername;
-
-    @Value("${rabbitmq.password}")
-    public String rabbitPassword;
-
-    @Value("${rabbitmq.host}")
-    public String rabbitHost;
-
-    @Value("${rabbitmq.port}")
-    public Integer rabbitPort;
 
     @Value("${rabbitmq.exchange.order-restaurant}")
     public String orderRestaurantExchange;
@@ -55,7 +43,7 @@ public class RabbitConfig {
     @Value("${rabbitmq.order-routing-key}")
     public String orderRoutingKey;
 
-    @Autowired
+    @Resource
     private OrderMessageService orderMessageService;
 
     private static RabbitTemplate rabbitTemplate;
@@ -120,28 +108,6 @@ public class RabbitConfig {
     }
 
     @Bean
-    public ConnectionFactory connectionFactory() {
-        // 初始化amqp包的连接工厂
-        CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-        connectionFactory.setHost(rabbitHost);
-        connectionFactory.setPort(rabbitPort);
-        connectionFactory.setUsername(rabbitUsername);
-        connectionFactory.setPassword(rabbitPassword);
-        // 设置开启返回和确认的回调
-        connectionFactory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
-        connectionFactory.setPublisherReturns(true);
-        connectionFactory.createConnection();
-        return connectionFactory;
-    }
-
-    @Bean
-    public RabbitAdmin rabbitAdmin(@Autowired ConnectionFactory connectionFactory) {
-        RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
-        rabbitAdmin.setAutoStartup(true);
-        return rabbitAdmin;
-    }
-
-    @Bean
     public RabbitTemplate rabbitTemplate(@Autowired ConnectionFactory connectionFactory) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         // 设置托管状态
@@ -169,11 +135,6 @@ public class RabbitConfig {
         SimpleMessageListenerContainer messageListenerContainer = new SimpleMessageListenerContainer(connectionFactory);
         // 设置要监听哪几个队列
         messageListenerContainer.setQueueNames(orderQueue);
-        // 设置同时有几个消费者线程可消费这个队列 相当于线程池的线程数
-        messageListenerContainer.setConcurrentConsumers(3);
-        messageListenerContainer.setMaxConcurrentConsumers(5);
-        // 设置收到消息后的确认方式 手动确认/自动确认
-        messageListenerContainer.setAcknowledgeMode(AcknowledgeMode.AUTO);
         // 使用适配器模式优雅调用service服务设置收到消息的回调 设置代理为服务类
         MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(orderMessageService);
         // 将[]byte格式转化为DTO 需要使用MessageConverter的实现类
@@ -192,8 +153,6 @@ public class RabbitConfig {
         // 设置类型转换器
         messageListenerAdapter.setMessageConverter(converter);
         messageListenerContainer.setMessageListener(messageListenerAdapter);
-        // 设置消费端限流
-        messageListenerContainer.setPrefetchCount(5);
         return messageListenerContainer;
     }
 

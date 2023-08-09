@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.settlement.common.enums;
+package com.sdu.rabbitmq.settlement.enums;
 
 public enum SettlementStatus {
     SUCCESS,

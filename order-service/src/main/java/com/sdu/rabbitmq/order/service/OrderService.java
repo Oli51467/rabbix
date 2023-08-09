@@ -1,7 +1,7 @@
 package com.sdu.rabbitmq.order.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sdu.rabbitmq.order.common.enums.OrderStatus;
+import com.sdu.rabbitmq.order.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
@@ -32,14 +32,8 @@ public class OrderService {
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String exchangeOrderRestaurant;
 
-    @Value("${rabbitmq.exchange}")
-    public String exchangeName;
-
     @Value("${rabbitmq.restaurant-routing-key}")
     public String restaurantRoutingKey;
-
-    @Value("${rabbitmq.delivery-routing-key}")
-    public String deliveryRoutingKey;
 
     ObjectMapper objectMapper = new ObjectMapper();
 

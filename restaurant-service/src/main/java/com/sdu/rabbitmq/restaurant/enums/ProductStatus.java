@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.restaurant.common.enums;
+package com.sdu.rabbitmq.restaurant.enums;
 
 public enum ProductStatus {
     AVAILABLE,

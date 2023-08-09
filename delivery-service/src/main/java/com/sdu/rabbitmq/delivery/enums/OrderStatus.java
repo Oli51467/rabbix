@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.reward.common.enums;
+package com.sdu.rabbitmq.delivery.enums;
 
 public enum OrderStatus {
     ORDER_CREATING,

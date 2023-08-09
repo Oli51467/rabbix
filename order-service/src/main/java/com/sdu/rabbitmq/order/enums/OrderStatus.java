@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.order.common.enums;
+package com.sdu.rabbitmq.order.enums;
 
 public enum OrderStatus {
     /**
