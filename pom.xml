@@ -21,6 +21,7 @@
         <module>delivery-service</module>
         <module>settlement-service</module>
         <module>reward-service</module>
+        <module>rabbit-dts</module>
     </modules>
 
     <properties>
