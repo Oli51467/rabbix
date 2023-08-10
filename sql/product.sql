@@ -18,6 +18,6 @@ CREATE TABLE `product`  (
 -- ----------------------------
 -- Records of product
 -- ----------------------------
-INSERT INTO `product` VALUES (2, 'eqwe', 23.25, 1, 'AVALIABLE', '2020-05-06 19:19:04');
+INSERT INTO `product` VALUES (2, 'product2', 23.25, 1, 'AVAILABLE', '2020-05-06 19:19:04');
 
 SET FOREIGN_KEY_CHECKS = 1;

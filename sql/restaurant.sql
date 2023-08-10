@@ -18,6 +18,6 @@ CREATE TABLE `restaurant`  (
 -- ----------------------------
 -- Records of restaurant
 -- ----------------------------
-INSERT INTO `restaurant` VALUES (1, 'qeqwe', '2weqe', 'OPEN', 1, '2020-05-06 19:19:39');
+INSERT INTO `restaurant` VALUES (1, '古丽花儿', '长江路1号', 'OPEN', 1, '2020-05-06 19:19:39');
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,6 +1,5 @@
 package com.sdu.rabbitmq.order.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
@@ -8,12 +7,10 @@ import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.util.Date;
 
 @Service("OrderService")
@@ -29,12 +26,10 @@ public class OrderService {
     @Value("${rabbitmq.restaurant-routing-key}")
     public String restaurantRoutingKey;
 
-    @Autowired
+    @Resource
     private TransMessageTransmitter transmitter;
 
-    ObjectMapper objectMapper = new ObjectMapper();
-
-    public void createOrder(CreateOrderVO createOrderVO) throws IOException {
+    public void createOrder(CreateOrderVO createOrderVO) {
         log.info("createOrder:orderCreateVO: {}", createOrderVO);
         // 创建订单 设置订单状态为创建中
         OrderDetail order = new OrderDetail();

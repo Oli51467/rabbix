@@ -1,7 +1,8 @@
 package com.sdu.rabbitmq.restaurant.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
+import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.restaurant.enums.ProductStatus;
 import com.sdu.rabbitmq.restaurant.enums.RestaurantStatus;
 import com.sdu.rabbitmq.restaurant.entity.dto.OrderMessageDTO;
@@ -10,30 +11,25 @@ import com.sdu.rabbitmq.restaurant.entity.po.Restaurant;
 import com.sdu.rabbitmq.restaurant.repository.ProductMapper;
 import com.sdu.rabbitmq.restaurant.repository.RestaurantMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
-import static com.sdu.rabbitmq.restaurant.config.RabbitConfig.sendToRabbit;
+import java.io.IOException;
 
 @Service("OrderMessageService")
 @Slf4j
-public class OrderMessageService {
+public class OrderMessageService extends AbstractMessageListener {
 
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String orderRestaurantExchange;
 
-    @Value("${rabbitmq.exchange.dlx}")
-    private String dlxExchange;
-
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
-
-    @Value("${rabbitmq.dlx-queue}")
-    private String dlxQueue;
 
     @Resource
     private ProductMapper productMapper;
@@ -41,11 +37,15 @@ public class OrderMessageService {
     @Resource
     private RestaurantMapper restaurantMapper;
 
-    // 只会从订单微服务接收到消息
-    public void handleMessage(OrderMessageDTO orderMessage) {
-        log.info("Order Service received: {}", orderMessage);
-        log.info("Current order status: {}", orderMessage.getOrderStatus());
+    @Resource
+    private TransMessageTransmitter transmitter;
+
+    @Override
+    public void receiveMessage(Message message) {
+        log.info("receive message: {}", message);
         try {
+            OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
+            log.info("Current order status: {}", orderMessage.getOrderStatus());
             // 根据产品id从数据库获取到订单中的产品
             Product product = productMapper.selectById(orderMessage.getProductId());
             log.info("Restaurant onMessage---product info: {}", product);
@@ -59,11 +59,10 @@ public class OrderMessageService {
             } else {
                 orderMessage.setConfirmed(false);
             }
-            log.info("Restaurant send message---OrderMessage: {}", orderMessage);
             // 确认无误后，将消息回发给订单服务
-            String messageToSend = objectMapper.writeValueAsString(orderMessage);
-            sendToRabbit(orderRestaurantExchange, orderRoutingKey, messageToSend);
-        } catch (JsonProcessingException e) {
+            log.info("Restaurant send message---OrderMessage: {}", orderMessage);
+            transmitter.send(orderRestaurantExchange, orderRoutingKey, orderMessage);
+        } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
     }
