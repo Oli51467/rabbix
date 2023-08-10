@@ -1,6 +1,7 @@
 package com.sdu.rabbitmq.order.config;
 
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
+import com.sdu.rabbitmq.order.rdts.service.TransMessageService;
 import com.sdu.rabbitmq.order.service.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -45,6 +46,9 @@ public class RabbitConfig {
 
     @Resource
     private OrderMessageService orderMessageService;
+
+    @Autowired
+    private TransMessageService transMessageService;
 
     private static RabbitTemplate rabbitTemplate;
 
@@ -112,20 +116,20 @@ public class RabbitConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         // 设置托管状态
         rabbitTemplate.setMandatory(true);
-        // 设置消息返回的回调
-        rabbitTemplate.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
-            log.info("Return Callback---message: {}, replyCode: {}, replyText: {}, exchange: {}, routingKey: {}",
-                    message, replyCode, replyText, exchange, routingKey);
-        });
-        // 设置确认消息从RabbitMQ发出的回调
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
-            if (ack) {
-                log.info("RabbitMQ confirm send success");
+            log.info("correlationData:{}, ack:{}, cause:{}", correlationData, ack, cause);
+            if (ack && null != correlationData) {
+                // 通过correlationData找到确认的是哪条消息
+                String messageId = correlationData.getId();
+                log.info("消息已经正确投递到交换机, id:{}", messageId);
+                transMessageService.sendMessageSuccess(messageId);
             } else {
-                log.error("RabbitMQ confirm send failed");
-                // TODO:根据CorrelationData的信息将订单状态设置为失败
+                log.error("消息投递至交换机失败, correlationData:{}", correlationData);
             }
-            log.info("Confirm Callback---correlationData: {}, ack: {}, cause: {}", correlationData, ack, cause);
+        });
+        rabbitTemplate.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
+            log.error("消息无法路由！message:{}, replyCode:{} replyText:{} exchange:{} routingKey:{}", message, replyCode, replyText, exchange, routingKey);
+            transMessageService.handleMessageReturn(message.getMessageProperties().getMessageId(), exchange, routingKey, new String(message.getBody()));
         });
         return rabbitTemplate;
     }

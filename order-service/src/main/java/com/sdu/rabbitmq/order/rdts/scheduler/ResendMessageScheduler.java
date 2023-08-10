@@ -1,7 +1,7 @@
-package com.sdu.rabbit.rdts.scheduler;
+package com.sdu.rabbitmq.order.rdts.scheduler;
 
-import com.sdu.rabbit.rdts.domain.TransMessage;
-import com.sdu.rabbit.rdts.service.TransMessageService;
+import com.sdu.rabbitmq.order.rdts.domain.TransMessage;
+import com.sdu.rabbitmq.order.rdts.service.TransMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;

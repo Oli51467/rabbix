@@ -1,10 +1,10 @@
-package com.sdu.rabbit.rdts.service;
+package com.sdu.rabbitmq.order.rdts.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.sdu.rabbit.rdts.domain.TransMessage;
-import com.sdu.rabbit.rdts.enums.TransMessageType;
-import com.sdu.rabbit.rdts.repository.TransMessageMapper;
+import com.sdu.rabbitmq.order.rdts.domain.TransMessage;
+import com.sdu.rabbitmq.order.rdts.enums.TransMessageType;
+import com.sdu.rabbitmq.order.rdts.repository.TransMessageMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-@Service
+@Service("TransMessageService")
 @Slf4j
 public class TransMessageServiceImpl implements TransMessageService {
 

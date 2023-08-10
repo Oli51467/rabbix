@@ -1,7 +1,7 @@
-package com.sdu.rabbit.rdts.domain;
+package com.sdu.rabbitmq.order.rdts.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.sdu.rabbit.rdts.enums.TransMessageType;
+import com.sdu.rabbitmq.order.rdts.enums.TransMessageType;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
