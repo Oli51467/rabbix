@@ -1,23 +1,14 @@
 package com.sdu.rabbitmq.order.config;
 
-import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
-import com.sdu.rabbitmq.order.rdts.service.TransMessageService;
 import com.sdu.rabbitmq.order.service.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.support.converter.ClassMapper;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import javax.annotation.Resource;
 
 @Slf4j
 @Configuration
@@ -43,19 +34,6 @@ public class RabbitConfig {
 
     @Value("${rabbitmq.order-routing-key}")
     public String orderRoutingKey;
-
-    @Resource
-    private OrderMessageService orderMessageService;
-
-    @Autowired
-    private TransMessageService transMessageService;
-
-    private static RabbitTemplate rabbitTemplate;
-
-    @Autowired
-    public void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
-        RabbitConfig.rabbitTemplate = rabbitTemplate;
-    }
 
     /* -------------------Order to Restaurant-------------------*/
     @Bean
@@ -112,58 +90,14 @@ public class RabbitConfig {
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(@Autowired ConnectionFactory connectionFactory) {
-        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        // 设置托管状态
-        rabbitTemplate.setMandatory(true);
-        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
-            log.info("correlationData:{}, ack:{}, cause:{}", correlationData, ack, cause);
-            if (ack && null != correlationData) {
-                // 通过correlationData找到确认的是哪条消息
-                String messageId = correlationData.getId();
-                log.info("消息已经正确投递到交换机, id:{}", messageId);
-                transMessageService.sendMessageSuccess(messageId);
-            } else {
-                log.error("消息投递至交换机失败, correlationData:{}", correlationData);
-            }
-        });
-        rabbitTemplate.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
-            log.error("消息无法路由！message:{}, replyCode:{} replyText:{} exchange:{} routingKey:{}", message, replyCode, replyText, exchange, routingKey);
-            transMessageService.handleMessageReturn(message.getMessageProperties().getMessageId(), exchange, routingKey, new String(message.getBody()));
-        });
-        return rabbitTemplate;
-    }
-
-    @Bean
-    public SimpleMessageListenerContainer messageListenerContainer(@Autowired ConnectionFactory connectionFactory) {
+    public SimpleMessageListenerContainer messageListenerContainer(@Autowired ConnectionFactory connectionFactory,
+                                                                   @Autowired OrderMessageService orderMessageService) {
         SimpleMessageListenerContainer messageListenerContainer = new SimpleMessageListenerContainer(connectionFactory);
         // 设置要监听哪几个队列
         messageListenerContainer.setQueueNames(orderQueue);
-        // 使用适配器模式优雅调用service服务设置收到消息的回调 设置代理为服务类
-        MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(orderMessageService);
-        // 将[]byte格式转化为DTO 需要使用MessageConverter的实现类
-        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
-        converter.setClassMapper(new ClassMapper() {
-            @Override
-            public void fromClass(@NotNull Class<?> aClass, @NotNull MessageProperties messageProperties) {}
-
-            @NotNull
-            @Override
-            public Class<?> toClass(@NotNull MessageProperties messageProperties) {
-                return OrderMessageDTO.class;
-            }
-        });
-
-        // 设置类型转换器
-        messageListenerAdapter.setMessageConverter(converter);
-        messageListenerContainer.setMessageListener(messageListenerAdapter);
+        messageListenerContainer.setExposeListenerChannel(true);
+        messageListenerContainer.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+        messageListenerContainer.setMessageListener(orderMessageService);
         return messageListenerContainer;
-    }
-
-    public static void sendToRabbit(String exchange, String routingKey, String messageToSend) {
-        MessageProperties messageProperties = new MessageProperties();
-
-        Message message = new Message(messageToSend.getBytes(), messageProperties);
-        rabbitTemplate.send(exchange, routingKey, message);
     }
 }

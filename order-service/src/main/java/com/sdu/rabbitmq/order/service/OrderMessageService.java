@@ -5,8 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.order.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
+import com.sdu.rabbitmq.order.rdts.listener.AbstractMessageListener;
+import com.sdu.rabbitmq.order.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,14 +18,12 @@ import javax.annotation.Resource;
 
 import java.io.IOException;
 
-import static com.sdu.rabbitmq.order.config.RabbitConfig.sendToRabbit;
-
 /**
  * 和rabbitmq消息处理相关的通信服务类
  */
 @Service("OrderMessageService")
 @Slf4j
-public class OrderMessageService {
+public class OrderMessageService extends AbstractMessageListener {
 
     @Value("${rabbitmq.exchange.order-delivery}")
     private String orderDeliveryExchange;
@@ -44,6 +46,9 @@ public class OrderMessageService {
     @Resource
     private OrderDetailMapper orderDetailMapper;
 
+    @Autowired
+    private TransMessageTransmitter transmitter;
+
     ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -51,10 +56,12 @@ public class OrderMessageService {
      * consumerTag 消费者类型
      * message Delivery类型的消息
      */
-    public void handleMessage(OrderMessageDTO orderMessage) {
-        log.info("Order Service received: {}", orderMessage);
-        log.info("Current order status: {}", orderMessage.getOrderStatus());
+    @Override
+    public void receiveMessage(Message message) {
+        log.info("Order Service received: {}", message);
         try {
+            OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
+            log.info("Current order status: {}", orderMessage.getOrderStatus());
             // 通过订单状态判断是哪个微服务发来的消息
             switch (orderMessage.getOrderStatus()) {
                 // 订单刚创建商家还未确认 是商家发来的消息
@@ -67,10 +74,8 @@ public class OrderMessageService {
                         orderDetailMapper.update(null, updateWrapper);
                         // 设置订单状态
                         orderMessage.setOrderStatus(OrderStatus.RESTAURANT_CONFIRMED);
-                        // 将DTO转换成Json字符串
-                        String messageToSend = objectMapper.writeValueAsString(orderMessage);
                         // 给骑手微服务发送消息
-                        sendToRabbit(orderDeliveryExchange, deliveryRoutingKey, messageToSend);
+                        transmitter.send(orderDeliveryExchange, deliveryRoutingKey, orderMessage);
                     } else {
                         updateOrderFailed(orderMessage.getOrderId());
                     }
@@ -87,8 +92,7 @@ public class OrderMessageService {
                         // 设置订单状态
                         orderMessage.setOrderStatus(OrderStatus.DELIVERYMAN_CONFIRMED);
                         // 向结算微服务发送一条消息 发送的方式是扇形广播
-                        String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        sendToRabbit(orderSettlementSendExchange, settlementRoutingKey, messageToSend);
+                        transmitter.send(orderSettlementSendExchange, settlementRoutingKey, orderMessage);
                     } else {
                         // 如果没有骑手，则直接更新订单的状态为失败
                         updateOrderFailed(orderMessage.getOrderId());
@@ -104,8 +108,7 @@ public class OrderMessageService {
                         orderDetailMapper.update(null, updateWrapper);
                         orderMessage.setOrderStatus(OrderStatus.SETTLEMENT_CONFIRMED);
                         // 向积分微服务发送一条消息 发送的方式是topic
-                        String messageToSend = objectMapper.writeValueAsString(orderMessage);
-                        sendToRabbit(orderRewardExchange, rewardRoutingKey, messageToSend);
+                        transmitter.send(orderRewardExchange, rewardRoutingKey, orderMessage);
                     } else {
                         // 如果没有结算id，则直接更新订单的状态为失败
                         updateOrderFailed(orderMessage.getOrderId());

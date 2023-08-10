@@ -7,7 +7,7 @@ import java.util.List;
 public interface TransMessageService {
 
     /**
-     * saveMessageBeforeSend
+     * messageBeforeSend
      * 消息准备好被发送，发送前暂存消息到数据库
      *
      * @param exchange   目标交换机
@@ -15,7 +15,7 @@ public interface TransMessageService {
      * @param body       消息体
      * @return TransMessage 存储到数据库的事务消息
      */
-    TransMessage saveMessageBeforeSend(String exchange, String routingKey, String body);
+    TransMessage messageBeforeSend(String exchange, String routingKey, String body);
 
     /**
      * sendMessageSuccess
@@ -62,7 +62,7 @@ public interface TransMessageService {
     void handleMessageDead(String id);
 
     /**
-     * saveMessageBeforeConsume
+     * messageBeforeConsume
      * 消息消费前保存
      *
      * @param id         消息id
@@ -72,7 +72,7 @@ public interface TransMessageService {
      * @param body       消息体
      * @return TransMessage
      */
-    TransMessage saveMessageBeforeConsume(String id, String exchange, String routingKey, String queue, String body);
+    TransMessage messageBeforeConsume(String id, String exchange, String routingKey, String queue, String body);
 
     /**
      * consumeMessageSuccess

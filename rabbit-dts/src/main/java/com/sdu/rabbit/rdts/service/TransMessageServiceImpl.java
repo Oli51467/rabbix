@@ -25,15 +25,13 @@ public class TransMessageServiceImpl implements TransMessageService {
     private String serviceName;
 
     @Override
-    public TransMessage saveMessageBeforeSend(String exchange, String routingKey, String body) {
+    public TransMessage messageBeforeSend(String exchange, String routingKey, String body) {
         return saveMessage(exchange, routingKey, body);
     }
 
     @Override
     public void sendMessageSuccess(String id) {
-        QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", id).eq("service", serviceName);
-        transMessageMapper.delete(queryWrapper);
+        deleteTransMessage(id);
     }
 
     @Override
@@ -65,13 +63,36 @@ public class TransMessageServiceImpl implements TransMessageService {
     }
 
     @Override
-    public TransMessage saveMessageBeforeConsume(String id, String exchange, String routingKey, String queue, String body) {
-        return null;
+    public TransMessage messageBeforeConsume(String id, String exchange, String routingKey, String queue, String body) {
+        // 查询数据库中有无该消息，若有，增加消费次数，若没有则新建
+        QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", id).eq("service", serviceName);
+        TransMessage transMessage = transMessageMapper.selectOne(queryWrapper);
+        // 没有则新建
+        if (null == transMessage) {
+            transMessage = new TransMessage();
+            transMessage.setId(id);
+            transMessage.setId(serviceName);
+            transMessage.setExchange(exchange);
+            transMessage.setRoutingKey(routingKey);
+            transMessage.setQueue(queue);
+            transMessage.setPayload(body);
+            transMessage.setSequence(0);
+            transMessage.setType(TransMessageType.RECEIVE);
+            transMessage.setCreateTime(new Date());
+            transMessageMapper.insert(transMessage);
+        } else {
+            UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();
+            updateWrapper.eq("id", transMessage.getId());
+            transMessage.setSequence(transMessage.getSequence() + 1);
+            transMessageMapper.update(transMessage, updateWrapper);
+        }
+        return transMessage;
     }
 
     @Override
     public void consumeMessageSuccess(String id) {
-
+        deleteTransMessage(id);
     }
 
     private TransMessage saveMessage(String exchange, String routingKey, String body) {
@@ -86,5 +107,11 @@ public class TransMessageServiceImpl implements TransMessageService {
         transMessage.setType(TransMessageType.SEND);
         transMessageMapper.insert(transMessage);
         return transMessage;
+    }
+
+    private void deleteTransMessage(String id) {
+        QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", id).eq("service", serviceName);
+        transMessageMapper.delete(queryWrapper);
     }
 }

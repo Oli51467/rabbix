@@ -32,7 +32,7 @@ public class TransMessageTransmitter {
             ObjectMapper objectMapper = new ObjectMapper();
             String payloadStr = objectMapper.writeValueAsString(payload);
             // 调用发送前的服务
-            TransMessage transMessage = transMessageService.saveMessageBeforeSend(exchange, routingKey, payloadStr);
+            TransMessage transMessage = transMessageService.messageBeforeSend(exchange, routingKey, payloadStr);
             // rabbitTemplate 发送给MQ
             MessageProperties messageProperties = new MessageProperties();
             messageProperties.setContentType("application/json");
