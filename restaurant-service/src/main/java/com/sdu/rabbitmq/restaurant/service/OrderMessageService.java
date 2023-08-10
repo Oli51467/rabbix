@@ -42,7 +42,8 @@ public class OrderMessageService extends AbstractMessageListener {
 
     @Override
     public void receiveMessage(Message message) {
-        log.info("receive message: {}", message);
+        String messageBody = new String(message.getBody());
+        log.info("receive message: {}", messageBody);
         try {
             OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
             log.info("Current order status: {}", orderMessage.getOrderStatus());

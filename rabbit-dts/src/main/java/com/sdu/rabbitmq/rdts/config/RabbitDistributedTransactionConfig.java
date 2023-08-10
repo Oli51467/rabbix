@@ -59,8 +59,7 @@ public class RabbitDistributedTransactionConfig {
 
     @Bean
     public RabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
-        SimpleRabbitListenerContainerFactory factory =
-                new SimpleRabbitListenerContainerFactory();
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setConcurrentConsumers(3);
         factory.setMaxConcurrentConsumers(10);
