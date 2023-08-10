@@ -63,6 +63,21 @@ public class TransMessageServiceImpl implements TransMessageService {
     }
 
     @Override
+    public void handleMessageDead(String id, String exchange, String routingKey, String queue, String body) {
+        TransMessage transMessage = new TransMessage();
+        transMessage.setId(id);
+        transMessage.setService(serviceName);
+        transMessage.setExchange(exchange);
+        transMessage.setRoutingKey(routingKey);
+        transMessage.setQueue(queue);
+        transMessage.setPayload(body);
+        transMessage.setSequence(0);
+        transMessage.setType(TransMessageType.DEAD);
+        transMessage.setCreateTime(new Date());
+        transMessageMapper.insert(transMessage);
+    }
+
+    @Override
     public TransMessage messageBeforeConsume(String id, String exchange, String routingKey, String queue, String body) {
         // 查询数据库中有无该消息，若有，增加消费次数，若没有则新建
         QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
@@ -72,7 +87,7 @@ public class TransMessageServiceImpl implements TransMessageService {
         if (null == transMessage) {
             transMessage = new TransMessage();
             transMessage.setId(id);
-            transMessage.setId(serviceName);
+            transMessage.setService(serviceName);
             transMessage.setExchange(exchange);
             transMessage.setRoutingKey(routingKey);
             transMessage.setQueue(queue);

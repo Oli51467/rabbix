@@ -1,13 +1,13 @@
-## RabbitMQ Stream 可靠消息投递，实现分布式事务消息，保证消息可靠发送的工作流Demo
+# RabbitMQ Stream 可靠消息投递，实现分布式事务消息，保证消息可靠发送的工作流Demo
 
-### 工具及版本
+## 工具及版本
 
 - SpringBoot ```2.2.4.RELEASE```
 - MybatisPlus ```3.5.2```
 - RabbitMQ ```3.12.2```
 - MySql ```8.0.32```
 
-### 消息可靠性处理
+## 消息可靠性处理
 - Producer
 1. 使用RabbitMQ发送端确认机制，确认消息成功发送到MQ并被处理。
     - 单条同步确认
@@ -39,13 +39,13 @@
    - 死信队列：队列配置了DLX属性（Dead-Letter-Exchange）
    - 当一个消息变成死信后，能重新被发布到另一个交换机上，经过路由后会进入一个固定的队列
 
-### Spring AMQP 特性
+## Spring AMQP 特性
 1. 异步消息监听容器
 2. RabbitTemplate收发消息
 3. RabbitAdmin声明队列和交换机
 4. SpringBootConfig支持RabbitMQ连接
 
-### SimpleMessageListenerContainer
+## SimpleMessageListenerContainer
 
 1.设置同时监听多个队列、自动启动、自动配置RabbitMQ
 
@@ -59,26 +59,26 @@
 
 6.支持动态设置，运行中修改监听器的配置
 
-### 设计模式
+## 设计模式
 
 - 单例模式
 - 适配器模式 MessageListenerAdapter
 
-### Spring工具
+## Spring工具
 
 - MessageConverter
 - RabbitListener注解 可嵌套@Exchange @Queue @QueueBinding
 
-### 分布式事务框架
+## 分布式事务框架
 
-#### 传统事务 ACID 
+### 传统事务 ACID 
 1. 原子性
 2. 一致性
 3. 隔离性
 4. 持久性
 
 分布式事务无法满足原子性和隔离性
-#### 分布式事务
+### 分布式事务
 CAP无法同时满足 
 - 一致性
 - 可用性 
@@ -89,19 +89,27 @@ BASE理论
 - Soft State 软状态
 - Eventually consistent 最终一致性
 
-消息发送失败重试
+### 消息发送失败重试
 - 发送消息前消息持久化
 - 发送成功时删除消息
 - 定时检查未发送成功的消息，尝试重发
-  ![框架流程](./img/sender-process.png)
+  ![发送失败流程](./img/sender-process.png)
 
-消费失败重试
+### 消费失败重试
 
 - 收到消息时先持久化
 - 消息处理成功，消费端手动Ack，删除消息
 - 消息处理失败时，延时一段时间，不确认消息，记录重试次数，重回队列
 - 再次处理消息
-  ![框架流程](./img/consumer-process.png)
+  ![消费失败流程](./img/consumer-process.png)
+
+### 死信消息处理
+
+- 声明死信队列、交换机、绑定
+- 普通队列加入死信设置
+- 监听到死信后，持久化处理，并设置告警
+  ![死信处理流程](./img/dead-process.png)
+
 
 #### 系统框架
 - 发送失败重试

@@ -62,6 +62,16 @@ public interface TransMessageService {
     void handleMessageDead(String id);
 
     /**
+     * 保存并告警监听到的死信消息
+     * @param id 消息id
+     * @param exchange 目标交换机
+     * @param routingKey 目标路由key
+     * @param queue 目标队列
+     * @param body 消息体
+     */
+    void handleMessageDead(String id, String exchange, String routingKey, String queue, String body);
+
+    /**
      * messageBeforeConsume
      * 消息消费前保存
      *
