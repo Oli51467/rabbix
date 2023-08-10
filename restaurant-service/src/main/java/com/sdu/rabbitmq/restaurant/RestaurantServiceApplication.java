@@ -1,15 +1,16 @@
 package com.sdu.rabbitmq.restaurant;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@MapperScan({"com.sdu.rabbitmq"})
 @ComponentScan("com.sdu.rabbitmq")
-@EnableAsync
+@MapperScan(value = "com.sdu.rabbitmq", annotationClass = Mapper.class)
+@EnableScheduling
 public class RestaurantServiceApplication {
 
     public static void main(String[] args) {
