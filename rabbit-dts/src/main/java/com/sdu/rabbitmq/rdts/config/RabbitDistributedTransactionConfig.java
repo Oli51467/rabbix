@@ -1,6 +1,6 @@
-package com.sdu.rabbit.rdts.config;
+package com.sdu.rabbitmq.rdts.config;
 
-import com.sdu.rabbit.rdts.service.TransMessageService;
+import com.sdu.rabbitmq.rdts.service.TransMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;

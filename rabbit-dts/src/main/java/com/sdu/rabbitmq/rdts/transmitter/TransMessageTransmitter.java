@@ -1,8 +1,8 @@
-package com.sdu.rabbitmq.order.rdts.transmitter;
+package com.sdu.rabbitmq.rdts.transmitter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sdu.rabbitmq.order.rdts.domain.TransMessage;
-import com.sdu.rabbitmq.order.rdts.service.TransMessageService;
+import com.sdu.rabbitmq.rdts.domain.TransMessage;
+import com.sdu.rabbitmq.rdts.service.TransMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -39,7 +39,7 @@ public class TransMessageTransmitter {
             Message message = new Message(payloadStr.getBytes(), messageProperties);
             message.getMessageProperties().setMessageId(transMessage.getId());
 
-            rabbitTemplate.send(exchange, routingKey, message, new CorrelationData(transMessage.getId()));
+            rabbitTemplate.convertAndSend(exchange, routingKey, message, new CorrelationData(transMessage.getId()));
 
             log.info("message sent from transmitter, id: {}", transMessage.getId());
         } catch (Exception e) {

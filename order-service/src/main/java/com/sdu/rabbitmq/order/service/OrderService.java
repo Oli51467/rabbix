@@ -1,11 +1,11 @@
 package com.sdu.rabbitmq.order.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
-import com.sdu.rabbitmq.order.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

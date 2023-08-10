@@ -1,7 +1,7 @@
-package com.sdu.rabbit.rdts.listener;
+package com.sdu.rabbitmq.rdts.listener;
 
 import com.rabbitmq.client.Channel;
-import com.sdu.rabbit.rdts.service.TransMessageService;
+import com.sdu.rabbitmq.rdts.service.TransMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;

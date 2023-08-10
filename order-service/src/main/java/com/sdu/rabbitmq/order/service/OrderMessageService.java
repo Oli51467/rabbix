@@ -2,15 +2,14 @@ package com.sdu.rabbitmq.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
+import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.order.entity.po.OrderDetail;
-import com.sdu.rabbitmq.order.rdts.listener.AbstractMessageListener;
-import com.sdu.rabbitmq.order.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +45,7 @@ public class OrderMessageService extends AbstractMessageListener {
     @Resource
     private OrderDetailMapper orderDetailMapper;
 
-    @Autowired
+    @Resource
     private TransMessageTransmitter transmitter;
 
     ObjectMapper objectMapper = new ObjectMapper();

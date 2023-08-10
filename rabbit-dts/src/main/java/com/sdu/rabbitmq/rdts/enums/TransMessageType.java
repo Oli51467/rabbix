@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.order.rdts.enums;
+package com.sdu.rabbitmq.rdts.enums;
 
 public enum TransMessageType {
     SEND,

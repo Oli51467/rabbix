@@ -1,4 +1,4 @@
-package com.sdu.rabbit.rdts.config;
+package com.sdu.rabbitmq.rdts.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
