@@ -1,5 +1,6 @@
 package com.sdu.rabbitmq.rdts.transmitter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.rdts.domain.TransMessage;
 import com.sdu.rabbitmq.rdts.service.TransMessageService;
@@ -24,26 +25,22 @@ public class TransMessageTransmitter {
     @Autowired
     private TransMessageService transMessageService;
 
-    public void send(String exchange, String routingKey, Object payload) {
+    public void send(String exchange, String routingKey, Object payload) throws JsonProcessingException {
         log.info("send(): exchange: {}, routingKey: {}, payload: {}", exchange, routingKey, payload);
 
-        try {
-            // 将要发送的各种类型的数据结构序列化
-            ObjectMapper objectMapper = new ObjectMapper();
-            String payloadStr = objectMapper.writeValueAsString(payload);
-            // 调用发送前的服务
-            TransMessage transMessage = transMessageService.messageBeforeSend(exchange, routingKey, payloadStr);
-            // rabbitTemplate 发送给MQ
-            MessageProperties messageProperties = new MessageProperties();
-            messageProperties.setContentType("application/json");
-            Message message = new Message(payloadStr.getBytes(), messageProperties);
-            message.getMessageProperties().setMessageId(transMessage.getId());
+        // 将要发送的各种类型的数据结构序列化
+        ObjectMapper objectMapper = new ObjectMapper();
+        String payloadStr = objectMapper.writeValueAsString(payload);
+        // 调用发送前的服务
+        TransMessage transMessage = transMessageService.messageBeforeSend(exchange, routingKey, payloadStr);
+        // rabbitTemplate 发送给MQ
+        MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setContentType("application/json");
+        Message message = new Message(payloadStr.getBytes(), messageProperties);
+        message.getMessageProperties().setMessageId(transMessage.getId());
 
-            rabbitTemplate.convertAndSend(exchange, routingKey, message, new CorrelationData(transMessage.getId()));
+        rabbitTemplate.convertAndSend(exchange, routingKey, message, new CorrelationData(transMessage.getId()));
 
-            log.info("message sent from transmitter, id: {}", transMessage.getId());
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
+        log.info("message sent from transmitter, id: {}", transMessage.getId());
     }
 }

@@ -3,6 +3,7 @@ package com.sdu.rabbitmq.settlement.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
+import com.sdu.rabbitmq.settlement.enums.OrderStatus;
 import com.sdu.rabbitmq.settlement.enums.SettlementStatus;
 import com.sdu.rabbitmq.settlement.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.settlement.entity.po.Settlement;
@@ -38,25 +39,21 @@ public class OrderMessageService extends AbstractMessageListener {
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void receiveMessage(Message message) {
+    public void receiveMessage(Message message) throws IOException {
         String messageBody = new String(message.getBody());
-        log.info("receive message: {}", messageBody);
-        try {
-            OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
-            log.info("Current order status: {}", orderMessage.getOrderStatus());
-            Settlement settlement = new Settlement();
-            settlement.setAmount(orderMessage.getPrice());
-            settlement.setCreateTime(new Date());
-            settlement.setOrderId(orderMessage.getOrderId());
-            settlement.setStatus(SettlementStatus.SUCCESS);
-            settlement.setTransactionId(getSnowflakeNextId());
-            settlementMapper.insert(settlement);
-            orderMessage.setSettlementId(settlement.getId());
-            // 将消息回发给订单服务
-            log.info("settlement send---orderMessage: {}", orderMessage);
-            transmitter.send(orderSettlementSendExchange, orderRoutingKey, orderMessage);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
+        log.info("接收消息体: {}", messageBody);
+        OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
+        log.info("当前订单状态: {}", orderMessage.getOrderStatus());
+        Settlement settlement = new Settlement();
+        settlement.setAmount(orderMessage.getPrice());
+        settlement.setCreateTime(new Date());
+        settlement.setOrderId(orderMessage.getOrderId());
+        settlement.setStatus(SettlementStatus.SUCCESS);
+        settlement.setTransactionId(getSnowflakeNextId());
+        settlementMapper.insert(settlement);
+        orderMessage.setSettlementId(settlement.getId());
+        // 将消息回发给订单服务
+        log.info("结算服务发送给订单服务: {}", orderMessage);
+        transmitter.send(orderSettlementSendExchange, orderRoutingKey, orderMessage);
     }
 }

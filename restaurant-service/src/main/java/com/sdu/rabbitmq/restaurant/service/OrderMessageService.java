@@ -3,6 +3,7 @@ package com.sdu.rabbitmq.restaurant.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
+import com.sdu.rabbitmq.restaurant.enums.OrderStatus;
 import com.sdu.rabbitmq.restaurant.enums.ProductStatus;
 import com.sdu.rabbitmq.restaurant.enums.RestaurantStatus;
 import com.sdu.rabbitmq.restaurant.entity.dto.OrderMessageDTO;
@@ -41,30 +42,26 @@ public class OrderMessageService extends AbstractMessageListener {
     private TransMessageTransmitter transmitter;
 
     @Override
-    public void receiveMessage(Message message) {
+    public void receiveMessage(Message message) throws IOException {
         String messageBody = new String(message.getBody());
-        log.info("receive message: {}", messageBody);
-        try {
-            OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
-            log.info("Current order status: {}", orderMessage.getOrderStatus());
-            // 根据产品id从数据库获取到订单中的产品
-            Product product = productMapper.selectById(orderMessage.getProductId());
-            log.info("Restaurant onMessage---product info: {}", product);
-            // 根据产品中的餐厅id获取到餐厅信息
-            Restaurant restaurant = restaurantMapper.selectById(product.getRestaurantId());
-            log.info("Restaurant onMessage---restaurant info: {}", restaurant);
-            // 确定商品没有下架并且餐厅正常营业
-            if (product.getStatus() == ProductStatus.AVAILABLE && restaurant.getStatus() == RestaurantStatus.OPEN) {
-                orderMessage.setConfirmed(true);
-                orderMessage.setPrice(product.getPrice());
-            } else {
-                orderMessage.setConfirmed(false);
-            }
-            // 确认无误后，将消息回发给订单服务
-            log.info("Restaurant send message---OrderMessage: {}", orderMessage);
-            transmitter.send(orderRestaurantExchange, orderRoutingKey, orderMessage);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+        log.info("接收消息体: {}", messageBody);
+        OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
+        log.info("当前订单状态: {}", orderMessage.getOrderStatus());
+        // 根据产品id从数据库获取到订单中的产品
+        Product product = productMapper.selectById(orderMessage.getProductId());
+        log.info("订单产品信息: {}", product);
+        // 根据产品中的餐厅id获取到餐厅信息
+        Restaurant restaurant = restaurantMapper.selectById(product.getRestaurantId());
+        log.info("餐厅信息: {}", restaurant);
+        // 确定商品没有下架并且餐厅正常营业
+        if (product.getStatus() == ProductStatus.AVAILABLE && restaurant.getStatus() == RestaurantStatus.OPEN) {
+            orderMessage.setConfirmed(true);
+            orderMessage.setPrice(product.getPrice());
+        } else {
+            orderMessage.setConfirmed(false);
         }
+        // 确认无误后，将消息回发给订单服务
+        log.info("餐厅服务发送给订单服务: {}", orderMessage);
+        transmitter.send(orderRestaurantExchange, orderRoutingKey, orderMessage);
     }
 }

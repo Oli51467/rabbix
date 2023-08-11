@@ -33,12 +33,13 @@ public class ResendMessageScheduler {
 
     @Scheduled(fixedDelayString = "${rdts.resend-frequency}")
     public void resendMessage() {
-        log.info("resendMessage scheduler invoked!");
         List<TransMessage> readyMessages = transMessageService.getReadyMessages();
         log.info("ready messages count: {}", readyMessages.size());
 
         for (TransMessage readyMessage : readyMessages) {
             log.info("ready message: {}", readyMessage);
+            // 重试次数+1
+            transMessageService.resendMessage(readyMessage.getId());
             if (readyMessage.getSequence() > resendTimes) {
                 log.error("message {} resend too many time", readyMessage.getId());
                 transMessageService.handleMessageDead(readyMessage.getId());
@@ -52,8 +53,6 @@ public class ResendMessageScheduler {
                 rabbitTemplate.convertAndSend(readyMessage.getExchange(), readyMessage.getRoutingKey(), message, new CorrelationData(readyMessage.getId()));
 
                 log.info("message sent from transmitter, id: {}", readyMessage.getId());
-                // 重试次数+1
-                transMessageService.resendMessage(readyMessage.getId());
             }
         }
     }

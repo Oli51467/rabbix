@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.delivery.enums.DeliverymanStatus;
 import com.sdu.rabbitmq.delivery.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.delivery.entity.po.Deliveryman;
+import com.sdu.rabbitmq.delivery.enums.OrderStatus;
 import com.sdu.rabbitmq.delivery.repository.DeliverymanMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
@@ -36,22 +37,19 @@ public class OrderMessageService extends AbstractMessageListener {
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public void receiveMessage(Message message) {
+    public void receiveMessage(Message message) throws IOException {
         String messageBody = new String(message.getBody());
-        log.info("receive message: {}", messageBody);
-        try {
-            OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
-            // 从数据库中查找状态是可配送的骑手
-            QueryWrapper<Deliveryman> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("status", DeliverymanStatus.AVAILABLE);
-            List<Deliveryman> deliverymen = deliverymanMapper.selectList(queryWrapper);
-            // 随机选择一个空闲的骑手，将该订单分配给该骑手
-            orderMessage.setDeliverymanId(deliverymen.get(0).getId());
-            // 将信息发送给订单服务，说明匹配到了骑手
-            log.info("Delivery send message---OrderMessage: {}", orderMessage);
-            transmitter.send(orderDeliveryExchange, orderRoutingKey, orderMessage);
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
+        log.info("接收消息体: {}", messageBody);
+        OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
+        log.info("当前订单状态: {}", orderMessage.getOrderStatus());
+        // 从数据库中查找状态是可配送的骑手
+        QueryWrapper<Deliveryman> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("status", DeliverymanStatus.AVAILABLE);
+        List<Deliveryman> deliverymen = deliverymanMapper.selectList(queryWrapper);
+        // 随机选择一个空闲的骑手，将该订单分配给该骑手
+        orderMessage.setDeliverymanId(deliverymen.get(0).getId());
+        // 将信息发送给订单服务，说明匹配到了骑手
+        log.info("快递服务发送给订单服务: {}", orderMessage);
+        transmitter.send(orderDeliveryExchange, orderRoutingKey, orderMessage);
     }
 }

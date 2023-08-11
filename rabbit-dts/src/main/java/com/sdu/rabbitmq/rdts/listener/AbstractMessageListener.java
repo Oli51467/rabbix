@@ -23,7 +23,7 @@ public abstract class AbstractMessageListener implements ChannelAwareMessageList
     @Value("${rdts.resend-time}")
     private Integer resendTimes;
 
-    public abstract void receiveMessage(Message message);
+    public abstract void receiveMessage(Message message) throws IOException;
 
     @Override
     public void onMessage(Message message, Channel channel) throws InterruptedException, IOException {

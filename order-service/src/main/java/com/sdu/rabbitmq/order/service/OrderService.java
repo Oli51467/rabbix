@@ -1,5 +1,6 @@
 package com.sdu.rabbitmq.order.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.enums.OrderStatus;
 import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
@@ -46,9 +47,12 @@ public class OrderService {
         orderMessage.setProductId(order.getProductId());
         orderMessage.setAccountId(order.getAccountId());
         orderMessage.setOrderStatus(OrderStatus.ORDER_CREATING);
-
         // 将订单信息发送到消息队列 给餐厅微服务发送消息
-        transmitter.send(exchangeOrderRestaurant, restaurantRoutingKey, orderMessage);
+        try {
+            transmitter.send(exchangeOrderRestaurant, restaurantRoutingKey, orderMessage);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         log.info("Order service message sent!");
     }
 }

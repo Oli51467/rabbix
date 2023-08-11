@@ -26,17 +26,34 @@ public class TransMessageServiceImpl implements TransMessageService {
 
     @Override
     public TransMessage messageBeforeSend(String exchange, String routingKey, String body) {
-        return saveMessage(exchange, routingKey, body);
+        return saveMessage(exchange, routingKey, body, TransMessageType.SEND);
     }
 
     @Override
     public void sendMessageSuccess(String id) {
-        deleteTransMessage(id);
+        QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", id).ne("type", TransMessageType.LOST.toString());
+        TransMessage transMessage = transMessageMapper.selectOne(queryWrapper);
+        if (null != transMessage) {
+            log.info("Deleted: {}", transMessage);
+            deleteTransMessage(id);
+        }
     }
 
     @Override
     public TransMessage handleMessageReturn(String id, String exchange, String routingKey, String body) {
-        return saveMessage(exchange, routingKey, body);
+        QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", id);
+        TransMessage transMessage = transMessageMapper.selectOne(queryWrapper);
+        if (null == transMessage) {
+            log.info("create lost message");
+            return saveMessage(exchange, routingKey, body, TransMessageType.LOST);
+        }
+        transMessage.setType(TransMessageType.LOST);
+        UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", id);
+        transMessageMapper.update(transMessage, updateWrapper);
+        return transMessage;
     }
 
     @Override
@@ -110,7 +127,7 @@ public class TransMessageServiceImpl implements TransMessageService {
         deleteTransMessage(id);
     }
 
-    private TransMessage saveMessage(String exchange, String routingKey, String body) {
+    private TransMessage saveMessage(String exchange, String routingKey, String body, TransMessageType type) {
         TransMessage transMessage = new TransMessage();
         transMessage.setId(UUID.randomUUID().toString());
         transMessage.setService(serviceName);
@@ -119,7 +136,7 @@ public class TransMessageServiceImpl implements TransMessageService {
         transMessage.setPayload(body);
         transMessage.setSequence(0);
         transMessage.setCreateTime(new Date());
-        transMessage.setType(TransMessageType.SEND);
+        transMessage.setType(type);
         transMessageMapper.insert(transMessage);
         return transMessage;
     }
