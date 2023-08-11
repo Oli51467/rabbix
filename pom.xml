@@ -22,6 +22,7 @@
         <module>settlement-service</module>
         <module>reward-service</module>
         <module>rabbit-dts</module>
+        <module>common</module>
     </modules>
 
     <properties>
@@ -30,6 +31,9 @@
         <mybatis-plus.version>3.5.2</mybatis-plus.version>
         <spring.version>2.2.4.RELEASE</spring.version>
         <mysql.version>8.0.32</mysql.version>
+        <netty.version>4.1.35.Final</netty.version>
+        <hutool.version>5.7.17</hutool.version>
+        <redis.version>2.7.3</redis.version>
     </properties>
 
     <dependencyManagement>
@@ -47,23 +51,46 @@
                 <version>${spring.version}</version>
             </dependency>
 
+            <!-- rabbitmq -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-amqp</artifactId>
                 <version>${spring.version}</version>
             </dependency>
 
+            <!-- mybatis -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
 
-
+            <!-- mysql -->
             <dependency>
                 <groupId>com.mysql</groupId>
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql.version}</version>
+            </dependency>
+
+            <!-- netty -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+
+            <!-- hutool -->
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+
+            <!-- redis -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-redis</artifactId>
+                <version>${redis.version}</version>
             </dependency>
         </dependencies>
 

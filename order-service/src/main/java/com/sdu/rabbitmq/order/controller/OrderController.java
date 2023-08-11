@@ -1,7 +1,7 @@
 package com.sdu.rabbitmq.order.controller;
 
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
-import com.sdu.rabbitmq.order.service.OrderService;
+import com.sdu.rabbitmq.order.service.impl.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 

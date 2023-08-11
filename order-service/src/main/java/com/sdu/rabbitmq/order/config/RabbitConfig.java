@@ -1,6 +1,6 @@
 package com.sdu.rabbitmq.order.config;
 
-import com.sdu.rabbitmq.order.service.OrderMessageService;
+import com.sdu.rabbitmq.order.service.impl.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;

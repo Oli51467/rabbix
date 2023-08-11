@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.order.service;
+package com.sdu.rabbitmq.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;

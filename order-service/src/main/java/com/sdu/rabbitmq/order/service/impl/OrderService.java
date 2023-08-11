@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.order.service;
+package com.sdu.rabbitmq.order.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
