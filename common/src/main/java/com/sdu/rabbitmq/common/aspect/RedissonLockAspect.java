@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
 @Slf4j
 @Aspect
 @Component
-@Order(0) //确保比事务注解先执行，分布式锁在事务外
+@Order(0) // 确保比事务注解先执行，分布式锁在事务外
 public class RedissonLockAspect {
 
     @Autowired

@@ -8,15 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 限流策略工厂
- *
- * @author linzhihan
- * @date 2023/07/03
  */
 public class FrequencyControlStrategyFactory {
-    /**
-     * 指定时间内总次数限流
-     */
-    public static final String TOTAL_COUNT_WITH_IN_FIX_TIME_FREQUENCY_CONTROLLER = "TotalCountWithInFixTime";
+
     /**
      * 限流策略集合
      */

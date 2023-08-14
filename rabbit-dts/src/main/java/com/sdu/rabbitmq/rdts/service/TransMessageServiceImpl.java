@@ -67,7 +67,6 @@ public class TransMessageServiceImpl implements TransMessageService {
     @Override
     @RedissonLock(key = "#idempotent", waitTime = 5000)
     public void resendMessage(String id) {
-        // TODO:分布式锁
         UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id).eq("service", serviceName)
                 .setSql("`sequence` = `sequence` + 1");
