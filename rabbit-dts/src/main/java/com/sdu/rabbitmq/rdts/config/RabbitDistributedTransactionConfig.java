@@ -36,6 +36,12 @@ public class RabbitDistributedTransactionConfig {
     @Value("${rdts.vhost}")
     private String vhost;
 
+    @Value("${rdts.concurrent-consumers}")
+    private Integer concurrentConsumers;
+
+    @Value("${rdts.max-concurrent-consumers}")
+    private Integer maxConcurrentConsumers;
+
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -61,8 +67,8 @@ public class RabbitDistributedTransactionConfig {
     public RabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setConcurrentConsumers(3);
-        factory.setMaxConcurrentConsumers(10);
+        factory.setConcurrentConsumers(concurrentConsumers);
+        factory.setMaxConcurrentConsumers(maxConcurrentConsumers);
         factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
         return factory;
     }

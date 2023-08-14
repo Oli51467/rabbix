@@ -1,7 +1,6 @@
-package com.sdu.rabbitmq.order.utils;
+package com.sdu.rabbitmq.common.utils;
 
 import cn.hutool.extra.spring.SpringUtil;
-import com.sdu.rabbitmq.common.utils.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;

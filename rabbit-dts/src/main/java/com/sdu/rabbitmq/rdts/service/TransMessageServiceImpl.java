@@ -2,6 +2,7 @@ package com.sdu.rabbitmq.rdts.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.sdu.rabbitmq.common.annotation.RedissonLock;
 import com.sdu.rabbitmq.rdts.domain.TransMessage;
 import com.sdu.rabbitmq.rdts.enums.TransMessageType;
 import com.sdu.rabbitmq.rdts.repository.TransMessageMapper;
@@ -64,6 +65,7 @@ public class TransMessageServiceImpl implements TransMessageService {
     }
 
     @Override
+    @RedissonLock(key = "#idempotent", waitTime = 5000)
     public void resendMessage(String id) {
         // TODO:分布式锁
         UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();

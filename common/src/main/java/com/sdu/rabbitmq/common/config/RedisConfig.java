@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.order.config;
+package com.sdu.rabbitmq.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

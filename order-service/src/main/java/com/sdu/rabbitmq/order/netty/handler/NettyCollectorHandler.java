@@ -1,8 +1,8 @@
 package com.sdu.rabbitmq.order.netty.handler;
 
-import com.sdu.rabbitmq.order.entity.dto.RequestInfo;
+import com.sdu.rabbitmq.common.domain.dto.RequestInfo;
+import com.sdu.rabbitmq.common.utils.UserContextHolder;
 import com.sdu.rabbitmq.order.utils.NettyUtil;
-import com.sdu.rabbitmq.order.utils.UserContextHolder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;

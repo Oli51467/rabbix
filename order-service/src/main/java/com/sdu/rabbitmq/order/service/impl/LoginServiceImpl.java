@@ -3,8 +3,8 @@ package com.sdu.rabbitmq.order.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.sdu.rabbitmq.common.commons.RedisKey;
 import com.sdu.rabbitmq.common.utils.JwtUtil;
+import com.sdu.rabbitmq.common.utils.RedisUtil;
 import com.sdu.rabbitmq.order.service.LoginService;
-import com.sdu.rabbitmq.order.utils.RedisUtil;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;

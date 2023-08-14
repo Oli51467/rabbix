@@ -34,6 +34,7 @@
         <netty.version>4.1.35.Final</netty.version>
         <hutool.version>5.7.17</hutool.version>
         <redis.version>2.7.3</redis.version>
+        <redission.version>3.17.1</redission.version>
     </properties>
 
     <dependencyManagement>
@@ -91,6 +92,13 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-data-redis</artifactId>
                 <version>${redis.version}</version>
+            </dependency>
+
+            <!--redisson-->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redission.version}</version>
             </dependency>
         </dependencies>
 

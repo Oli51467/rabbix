@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.order.entity.dto;
+package com.sdu.rabbitmq.common.domain.dto;
 
 import lombok.Data;
 import lombok.Setter;

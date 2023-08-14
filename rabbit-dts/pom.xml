@@ -20,6 +20,15 @@
     </properties>
 
     <dependencies>
+
+        <!--common-->
+        <dependency>
+            <groupId>com.sdu</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <!--lombok-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -30,11 +39,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!--rabbitMQ-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
+        <!--mybatis-->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>

@@ -9,6 +9,8 @@ public enum ExceptionEnum {
 
     USER_NOT_EXIST("用户不存在"),
     USER_EXIST("用户已存在"),
+    LOCK_LIMIT("请求太频繁"),
+    FREQUENCY_LIMIT("请求过于频繁"),
     NOT_AUTH("没有权限"),
     ;
 

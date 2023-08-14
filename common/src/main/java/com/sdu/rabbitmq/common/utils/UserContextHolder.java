@@ -1,6 +1,6 @@
-package com.sdu.rabbitmq.order.utils;
+package com.sdu.rabbitmq.common.utils;
 
-import com.sdu.rabbitmq.order.entity.dto.RequestInfo;
+import com.sdu.rabbitmq.common.domain.dto.RequestInfo;
 
 public class UserContextHolder {
 

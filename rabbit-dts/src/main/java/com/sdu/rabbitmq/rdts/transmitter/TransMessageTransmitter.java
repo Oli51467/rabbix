@@ -9,8 +9,10 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /*
 业务代码与RabbitTemplate的中间层，直接操作RabbitTemplate
@@ -19,10 +21,13 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class TransMessageTransmitter {
 
-    @Autowired
+    @Value("${rdts.content-type}")
+    private String contentType;
+
+    @Resource
     private RabbitTemplate rabbitTemplate;
 
-    @Autowired
+    @Resource
     private TransMessageService transMessageService;
 
     public void send(String exchange, String routingKey, Object payload) throws JsonProcessingException {
@@ -35,7 +40,7 @@ public class TransMessageTransmitter {
         TransMessage transMessage = transMessageService.messageBeforeSend(exchange, routingKey, payloadStr);
         // rabbitTemplate 发送给MQ
         MessageProperties messageProperties = new MessageProperties();
-        messageProperties.setContentType("application/json");
+        messageProperties.setContentType(contentType);
         Message message = new Message(payloadStr.getBytes(), messageProperties);
         message.getMessageProperties().setMessageId(transMessage.getId());
 
