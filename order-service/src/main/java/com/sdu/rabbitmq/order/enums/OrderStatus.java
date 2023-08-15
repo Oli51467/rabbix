@@ -1,6 +1,11 @@
 package com.sdu.rabbitmq.order.enums;
 
 public enum OrderStatus {
+
+    /**
+     * 等待支付中
+     */
+    WAITING_PAY,
     /**
      * 创建中
      */

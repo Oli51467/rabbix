@@ -12,6 +12,8 @@ public enum ExceptionEnum {
     LOCK_LIMIT("请求太频繁"),
     FREQUENCY_LIMIT("请求过于频繁"),
     NOT_AUTH("没有权限"),
+    NO_PRODUCT("商品不存在"),
+    NO_STOCK("库存不足"),
     ;
 
     private String msg;

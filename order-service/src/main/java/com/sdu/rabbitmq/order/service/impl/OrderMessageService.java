@@ -121,6 +121,7 @@ public class OrderMessageService extends AbstractMessageListener {
                     updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.ORDER_CREATED)
                             .set("reward_id", orderMessage.getRewardId());
                     orderDetailMapper.update(null, updateWrapper);
+                    // TODO：发送消息到延时队列，等待被支付
                 } else {
                     // 如果没有积分id，则直接更新订单的状态为失败
                     updateOrderFailed(orderMessage.getOrderId());

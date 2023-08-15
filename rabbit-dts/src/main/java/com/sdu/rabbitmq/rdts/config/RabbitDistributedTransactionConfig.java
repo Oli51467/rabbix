@@ -85,6 +85,7 @@ public class RabbitDistributedTransactionConfig {
                 log.info("消息已经正确投递到交换机, id:{}", messageId);
                 transMessageService.sendMessageSuccess(messageId);
             } else {
+                // 如果投递失败 定时任务会讲消息捞起来
                 log.error("消息投递至交换机失败, correlationData:{}", correlationData);
             }
         });
