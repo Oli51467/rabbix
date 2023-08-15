@@ -26,7 +26,7 @@ public class LockService {
             throw new BusinessException(ExceptionEnum.LOCK_LIMIT);
         }
         try {
-            return supplier.get();//执行锁内的代码逻辑
+            return supplier.get();  // 执行锁内的代码逻辑
         } finally {
             if (lock.isLocked() && lock.isHeldByCurrentThread()) {
                 lock.unlock();

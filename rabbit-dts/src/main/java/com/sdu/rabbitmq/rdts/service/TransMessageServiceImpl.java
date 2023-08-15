@@ -65,7 +65,7 @@ public class TransMessageServiceImpl implements TransMessageService {
     }
 
     @Override
-    @RedissonLock(key = "#idempotent", waitTime = 5000)
+    @RedissonLock(prefixKey = "rabbit-dts", key = "resend", waitTime = 5000)
     public void resendMessage(String id) {
         UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id).eq("service", serviceName)
