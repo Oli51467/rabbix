@@ -3,7 +3,7 @@ package com.sdu.rabbitmq.rdts.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.sdu.rabbitmq.common.annotation.RedissonLock;
-import com.sdu.rabbitmq.rdts.domain.TransMessage;
+import com.sdu.rabbitmq.rdts.domain.entity.TransMessage;
 import com.sdu.rabbitmq.rdts.enums.TransMessageType;
 import com.sdu.rabbitmq.rdts.repository.TransMessageMapper;
 import lombok.extern.slf4j.Slf4j;

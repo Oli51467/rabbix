@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.rdts.domain;
+package com.sdu.rabbitmq.rdts.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.sdu.rabbitmq.rdts.enums.TransMessageType;

@@ -1,7 +1,7 @@
 package com.sdu.rabbitmq.rdts.listener;
 
 import com.rabbitmq.client.Channel;
-import com.sdu.rabbitmq.rdts.domain.TransMessage;
+import com.sdu.rabbitmq.rdts.domain.entity.TransMessage;
 import com.sdu.rabbitmq.rdts.service.TransMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;

@@ -1,6 +1,6 @@
 package com.sdu.rabbitmq.rdts.service;
 
-import com.sdu.rabbitmq.rdts.domain.TransMessage;
+import com.sdu.rabbitmq.rdts.domain.entity.TransMessage;
 
 import java.util.List;
 

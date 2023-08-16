@@ -101,6 +101,9 @@ public class OrderServiceImpl implements OrderService {
         QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", messageId);
         OrderDetail orderDetail = orderDetailMapper.selectOne(queryWrapper);
+        if (!orderDetail.getStatus().equals(OrderStatus.WAITING_PAY)) {
+            return ResponseResult.fail("订单已失效");
+        }
         UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", messageId).set("status", OrderStatus.ORDER_CREATING.toString());
         orderDetailMapper.update(null, updateWrapper);
