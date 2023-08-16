@@ -14,6 +14,10 @@ public class MQProducer {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    public void sendMsg(String exchange, String routingKey, Message message, CorrelationData correlationData) {
+        rabbitTemplate.convertAndSend(exchange, routingKey, message, correlationData);
+    }
+
     /**
      * 发送可靠消息，在事务提交后保证发送成功
      */

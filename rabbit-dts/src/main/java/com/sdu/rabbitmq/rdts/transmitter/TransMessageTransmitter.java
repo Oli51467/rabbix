@@ -3,7 +3,7 @@ package com.sdu.rabbitmq.rdts.transmitter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.rdts.domain.entity.TransMessage;
-import com.sdu.rabbitmq.rdts.event.RabbitSendEvent;
+import com.sdu.rabbitmq.rdts.factory.EventFactory;
 import com.sdu.rabbitmq.rdts.service.TransMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -26,11 +26,17 @@ public class TransMessageTransmitter {
     @Value("${rdts.content-type}")
     private String contentType;
 
+    @Value("${rdts.transaction-method}")
+    private String transactionMethod;
+
     @Resource
     private TransMessageService transMessageService;
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private EventFactory eventFactory;
 
     public void send(String exchange, String routingKey, Object payload) throws JsonProcessingException {
         log.info("send(): exchange: {}, routingKey: {}, payload: {}", exchange, routingKey, payload);
@@ -46,7 +52,7 @@ public class TransMessageTransmitter {
         Message message = new Message(payloadStr.getBytes(), messageProperties);
         message.getMessageProperties().setMessageId(transMessage.getId());
 
-        applicationEventPublisher.publishEvent(new RabbitSendEvent(this, exchange, routingKey, message,
-                new CorrelationData(transMessage.getId())));
+        applicationEventPublisher.publishEvent(eventFactory.createEvent(transactionMethod,
+                exchange, routingKey, message, new CorrelationData(transMessage.getId())));
     }
 }
