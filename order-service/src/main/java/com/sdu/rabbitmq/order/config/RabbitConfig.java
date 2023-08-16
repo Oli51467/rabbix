@@ -31,9 +31,6 @@ public class RabbitConfig {
     @Value("${rabbitmq.exchange.order-reward}")
     public String orderRewardExchange;
 
-    @Value("${rabbitmq.exchange.order-release}")
-    public String orderReleaseExchange;
-
     @Value("${rabbitmq.order-queue}")
     public String orderQueue;
 
@@ -49,7 +46,7 @@ public class RabbitConfig {
     /* -------------------Order to Restaurant-------------------*/
     @Bean
     public Exchange orderRestaurantExchange() {
-        return new DirectExchange(orderReleaseExchange);
+        return new DirectExchange(orderRestaurantExchange);
     }
 
     @Bean
@@ -64,11 +61,6 @@ public class RabbitConfig {
 
     /* -------------------Delay Queue-------------------*/
     @Bean
-    public Exchange orderReleaseExchange() {
-        return new DirectExchange(orderReleaseExchange);
-    }
-
-    @Bean
     public Queue orderDelayQueue() {
         HashMap<String, Object> args = new HashMap<>();
         args.put("x-dead-letter-exchange", "exchange.dlx");
@@ -79,7 +71,7 @@ public class RabbitConfig {
 
     @Bean
     public Binding orderReleaseBinding() {
-        return new Binding(orderDelayQueue, Binding.DestinationType.QUEUE, orderReleaseExchange, releaseRoutingKey, null);
+        return new Binding(orderDelayQueue, Binding.DestinationType.QUEUE, orderRestaurantExchange, releaseRoutingKey, null);
     }
 
     /* -------------------Order to Delivery-------------------*/

@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.delivery.enums.DeliverymanStatus;
 import com.sdu.rabbitmq.delivery.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.delivery.entity.po.Deliveryman;
-import com.sdu.rabbitmq.delivery.enums.OrderStatus;
 import com.sdu.rabbitmq.delivery.repository.DeliverymanMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +34,8 @@ public class OrderMessageService extends AbstractMessageListener {
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
 
-    ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void receiveMessage(Message message) throws IOException {

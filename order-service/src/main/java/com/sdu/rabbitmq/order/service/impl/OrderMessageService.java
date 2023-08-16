@@ -2,6 +2,7 @@ package com.sdu.rabbitmq.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.order.mapper.ProductMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.order.enums.OrderStatus;
@@ -45,6 +46,9 @@ public class OrderMessageService extends AbstractMessageListener {
 
     @Resource
     private OrderDetailMapper orderDetailMapper;
+
+    @Resource
+    private ProductMapper productMapper;
 
     @Resource
     private TransMessageTransmitter transmitter;
@@ -123,8 +127,10 @@ public class OrderMessageService extends AbstractMessageListener {
                     updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.ORDER_CREATED)
                             .set("reward_id", orderMessage.getRewardId());
                     orderDetailMapper.update(null, updateWrapper);
-                    // TODO：发送消息到延时队列，等待被支付
-
+                    int flag = productMapper.deductStock(orderMessage.getProductId());
+                    if (flag != 1) {
+                        updateOrderFailed(orderMessage.getOrderId());
+                    }
                 } else {
                     // 如果没有积分id，则直接更新订单的状态为失败
                     updateOrderFailed(orderMessage.getOrderId());

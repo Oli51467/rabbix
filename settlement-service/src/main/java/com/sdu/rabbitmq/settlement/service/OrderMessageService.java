@@ -10,6 +10,7 @@ import com.sdu.rabbitmq.settlement.entity.po.Settlement;
 import com.sdu.rabbitmq.settlement.repository.SettlementMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +37,8 @@ public class OrderMessageService extends AbstractMessageListener {
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
 
-    ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void receiveMessage(Message message) throws IOException {

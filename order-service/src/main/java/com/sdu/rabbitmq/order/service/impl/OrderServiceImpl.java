@@ -8,6 +8,7 @@ import com.sdu.rabbitmq.common.response.exception.BusinessException;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
 import com.sdu.rabbitmq.order.entity.dto.PayOrderDTO;
 import com.sdu.rabbitmq.order.entity.po.Product;
+import com.sdu.rabbitmq.order.enums.ProductStatus;
 import com.sdu.rabbitmq.order.mapper.ProductMapper;
 import com.sdu.rabbitmq.order.service.OrderService;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
@@ -36,9 +37,6 @@ public class OrderServiceImpl implements OrderService {
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String exchangeOrderRestaurant;
 
-    @Value("${rabbitmq.exchange.order-release}")
-    public String orderReleaseExchange;
-
     @Value("${rabbitmq.restaurant-routing-key}")
     public String restaurantRoutingKey;
 
@@ -57,7 +55,7 @@ public class OrderServiceImpl implements OrderService {
         if (null == product) {
             throw new BusinessException(ExceptionEnum.NO_PRODUCT);
         }
-        if (product.getStockLocked() >= product.getStock()) {
+        if (product.getStockLocked() >= product.getStock() || product.getStatus().equals(ProductStatus.NOT_AVAILABLE)) {
             throw new BusinessException(ExceptionEnum.NO_STOCK);
         }
         // 锁定库存
@@ -82,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
         orderMessage.setOrderStatus(OrderStatus.WAITING_PAY);
         // 将订单信息发送到延迟队列 等待支付
         try {
-            transmitter.send(orderReleaseExchange, releaseRoutingKey, orderMessage);
+            transmitter.send(exchangeOrderRestaurant, releaseRoutingKey, orderMessage);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

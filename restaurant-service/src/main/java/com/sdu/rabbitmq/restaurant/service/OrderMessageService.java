@@ -13,6 +13,7 @@ import com.sdu.rabbitmq.restaurant.repository.ProductMapper;
 import com.sdu.rabbitmq.restaurant.repository.RestaurantMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +24,6 @@ import java.io.IOException;
 @Service("OrderMessageService")
 @Slf4j
 public class OrderMessageService extends AbstractMessageListener {
-
-    ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String orderRestaurantExchange;
@@ -40,6 +39,9 @@ public class OrderMessageService extends AbstractMessageListener {
 
     @Resource
     private TransMessageTransmitter transmitter;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public void receiveMessage(Message message) throws IOException {
