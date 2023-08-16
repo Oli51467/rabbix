@@ -65,7 +65,7 @@ public class TransMessageServiceImpl implements TransMessageService {
     }
 
     @Override
-    @RedissonLock(prefixKey = "rabbit-dts", key = "resend", waitTime = 5000)
+    @RedissonLock(prefixKey = "rabbit-dts", key = "#id", waitTime = 5000)
     public void resendMessage(String id) {
         UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id).eq("service", serviceName)
@@ -130,7 +130,7 @@ public class TransMessageServiceImpl implements TransMessageService {
 
     private TransMessage saveMessage(String exchange, String routingKey, String body, TransMessageType type) {
         TransMessage transMessage = new TransMessage();
-        transMessage.setId(UUID.randomUUID().toString());
+        transMessage.setId(UUID.randomUUID().toString().replace("-", ""));
         transMessage.setService(serviceName);
         transMessage.setExchange(exchange);
         transMessage.setRoutingKey(routingKey);

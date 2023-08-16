@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
+
 @Slf4j
 @Configuration
 public class RabbitConfig {
@@ -29,16 +31,25 @@ public class RabbitConfig {
     @Value("${rabbitmq.exchange.order-reward}")
     public String orderRewardExchange;
 
+    @Value("${rabbitmq.exchange.order-release}")
+    public String orderReleaseExchange;
+
     @Value("${rabbitmq.order-queue}")
     public String orderQueue;
+
+    @Value("${rabbitmq.order-delay-queue}")
+    public String orderDelayQueue;
 
     @Value("${rabbitmq.order-routing-key}")
     public String orderRoutingKey;
 
+    @Value("${rabbitmq.release-routing-key}")
+    public String releaseRoutingKey;
+
     /* -------------------Order to Restaurant-------------------*/
     @Bean
     public Exchange orderRestaurantExchange() {
-        return new DirectExchange(orderRestaurantExchange);
+        return new DirectExchange(orderReleaseExchange);
     }
 
     @Bean
@@ -49,6 +60,26 @@ public class RabbitConfig {
     @Bean
     public Binding orderRestaurantBinding() {
         return new Binding(orderQueue, Binding.DestinationType.QUEUE, orderRestaurantExchange, orderRoutingKey, null);
+    }
+
+    /* -------------------Delay Queue-------------------*/
+    @Bean
+    public Exchange orderReleaseExchange() {
+        return new DirectExchange(orderReleaseExchange);
+    }
+
+    @Bean
+    public Queue orderDelayQueue() {
+        HashMap<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", "exchange.dlx");
+        args.put("x-dead-letter-routing-key", releaseRoutingKey);
+        args.put("x-message-ttl", 15000);
+        return new Queue(orderDelayQueue, true, false, false, args);
+    }
+
+    @Bean
+    public Binding orderReleaseBinding() {
+        return new Binding(orderDelayQueue, Binding.DestinationType.QUEUE, orderReleaseExchange, releaseRoutingKey, null);
     }
 
     /* -------------------Order to Delivery-------------------*/

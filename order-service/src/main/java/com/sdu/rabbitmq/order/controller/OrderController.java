@@ -1,6 +1,7 @@
 package com.sdu.rabbitmq.order.controller;
 
 import com.sdu.rabbitmq.common.response.ResponseResult;
+import com.sdu.rabbitmq.order.entity.dto.PayOrderDTO;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import com.sdu.rabbitmq.order.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
@@ -19,5 +20,10 @@ public class OrderController {
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public ResponseResult createOrder(@RequestBody CreateOrderVO orderCreateDTO) {
         return orderService.createOrder(orderCreateDTO);
+    }
+
+    @RequestMapping(value = "/pay", method = RequestMethod.POST)
+    public ResponseResult payOrder(@RequestBody PayOrderDTO payOrderDTO) {
+        return orderService.payOrder(payOrderDTO);
     }
 }

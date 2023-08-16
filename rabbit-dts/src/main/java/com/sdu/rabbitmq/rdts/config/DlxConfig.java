@@ -1,9 +1,9 @@
 package com.sdu.rabbitmq.rdts.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import com.sdu.rabbitmq.rdts.listener.AbstractDlxListener;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,5 +25,17 @@ public class DlxConfig {
     @Bean
     public Binding dlxBinding() {
         return BindingBuilder.bind(dlxQueue()).to(dlxExchange()).with("#");
+    }
+
+    @Bean
+    public SimpleMessageListenerContainer deadLetterListenerContainer(ConnectionFactory connectionFactory, AbstractDlxListener abstractDlxListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueues(dlxQueue());
+        container.setExposeListenerChannel(true);
+        container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+        container.setMessageListener(abstractDlxListener);
+        // 设置消费者能处理消息的最大个数
+        container.setPrefetchCount(100);
+        return container;
     }
 }

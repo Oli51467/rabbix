@@ -1,10 +1,12 @@
 package com.sdu.rabbitmq.order.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sdu.rabbitmq.common.response.ResponseResult;
 import com.sdu.rabbitmq.common.response.exception.BusinessException;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
+import com.sdu.rabbitmq.order.entity.dto.PayOrderDTO;
 import com.sdu.rabbitmq.order.entity.po.Product;
 import com.sdu.rabbitmq.order.mapper.ProductMapper;
 import com.sdu.rabbitmq.order.service.OrderService;
@@ -34,8 +36,14 @@ public class OrderServiceImpl implements OrderService {
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String exchangeOrderRestaurant;
 
+    @Value("${rabbitmq.exchange.order-release}")
+    public String orderReleaseExchange;
+
     @Value("${rabbitmq.restaurant-routing-key}")
     public String restaurantRoutingKey;
+
+    @Value("${rabbitmq.release-routing-key}")
+    public String releaseRoutingKey;
 
     @Resource
     private TransMessageTransmitter transmitter;
@@ -74,11 +82,43 @@ public class OrderServiceImpl implements OrderService {
         orderMessage.setOrderStatus(OrderStatus.WAITING_PAY);
         // 将订单信息发送到延迟队列 等待支付
         try {
+            transmitter.send(orderReleaseExchange, releaseRoutingKey, orderMessage);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("send to delay queue!");
+        return ResponseResult.ok(order.getId());
+    }
+
+    /**
+     * 支付订单
+     * @param payOrderDTO 支付订单dto
+     * @return ResponseResult
+     */
+    @Override
+    public ResponseResult payOrder(PayOrderDTO payOrderDTO) {
+        // 拿到订单id
+        String messageId = payOrderDTO.getMessageId();
+        // 从数据库中将订单信息查出 并修改状态为ORDER_CREATING
+        QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", messageId);
+        OrderDetail orderDetail = orderDetailMapper.selectOne(queryWrapper);
+        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", messageId).set("status", OrderStatus.ORDER_CREATING.toString());
+        orderDetailMapper.update(null, updateWrapper);
+        // 创建消息队列传输对象 状态为ORDER_CREATING
+        OrderMessageDTO orderMessage = new OrderMessageDTO();
+        orderMessage.setOrderId(orderDetail.getId());
+        orderMessage.setProductId(orderDetail.getProductId());
+        orderMessage.setAccountId(orderDetail.getAccountId());
+        orderMessage.setOrderStatus(OrderStatus.ORDER_CREATING);
+        // 将订单信息发送到餐厅微服务
+        try {
             transmitter.send(exchangeOrderRestaurant, restaurantRoutingKey, orderMessage);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        log.info("Order service message sent!");
+        log.info("send to restaurant queue!");
         return ResponseResult.ok();
     }
 }

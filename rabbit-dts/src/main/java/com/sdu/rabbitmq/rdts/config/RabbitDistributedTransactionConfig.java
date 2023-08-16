@@ -1,5 +1,6 @@
 package com.sdu.rabbitmq.rdts.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.rdts.service.TransMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -41,6 +42,11 @@ public class RabbitDistributedTransactionConfig {
 
     @Value("${rdts.max-concurrent-consumers}")
     private Integer maxConcurrentConsumers;
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
 
     @Bean
     public ConnectionFactory connectionFactory() {

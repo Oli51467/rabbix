@@ -10,6 +10,7 @@ import com.sdu.rabbitmq.order.entity.po.OrderDetail;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,7 +49,8 @@ public class OrderMessageService extends AbstractMessageListener {
     @Resource
     private TransMessageTransmitter transmitter;
 
-    ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /**
      * 从mq接收到消息的回调
@@ -122,6 +124,7 @@ public class OrderMessageService extends AbstractMessageListener {
                             .set("reward_id", orderMessage.getRewardId());
                     orderDetailMapper.update(null, updateWrapper);
                     // TODO：发送消息到延时队列，等待被支付
+
                 } else {
                     // 如果没有积分id，则直接更新订单的状态为失败
                     updateOrderFailed(orderMessage.getOrderId());
