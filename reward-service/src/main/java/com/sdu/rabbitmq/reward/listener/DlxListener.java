@@ -1,14 +1,14 @@
-package com.sdu.rabbitmq.order.listener;
+package com.sdu.rabbitmq.reward.listener;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
 import com.sdu.rabbitmq.common.domain.po.OrderDetail;
-import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
-import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
-import com.sdu.rabbitmq.order.repository.ProductMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractDlxListener;
+import com.sdu.rabbitmq.reward.entity.dto.OrderMessageDTO;
+import com.sdu.rabbitmq.reward.repository.OrderDetailMapper;
+import com.sdu.rabbitmq.reward.repository.ProductMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,14 +36,14 @@ public class DlxListener extends AbstractDlxListener {
         QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", orderMessage.getOrderId());
         OrderDetail orderDetail = orderDetailMapper.selectOne(queryWrapper);
-        if (orderDetail.getStatus().equals(OrderStatus.WAITING_PAY)) {
+        if (!orderDetail.getStatus().equals(OrderStatus.ORDER_CREATED)) {
             // 将该订单关闭
             UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
             updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.FAILED.toString());
             orderDetailMapper.update(null, updateWrapper);
             productMapper.unlockStock(orderDetail.getProductId());
         }
-        // 设置死信不保存
+        // 死信保存
         return false;
     }
 }

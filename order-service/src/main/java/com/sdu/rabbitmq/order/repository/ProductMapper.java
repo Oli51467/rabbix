@@ -1,7 +1,7 @@
-package com.sdu.rabbitmq.order.mapper;
+package com.sdu.rabbitmq.order.repository;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.sdu.rabbitmq.order.entity.po.Product;
+import com.sdu.rabbitmq.common.domain.po.Product;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Update;
 

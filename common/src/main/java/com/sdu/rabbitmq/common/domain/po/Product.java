@@ -1,7 +1,7 @@
-package com.sdu.rabbitmq.restaurant.entity.po;
+package com.sdu.rabbitmq.common.domain.po;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.sdu.rabbitmq.restaurant.enums.ProductStatus;
+import com.sdu.rabbitmq.common.commons.enums.ProductStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

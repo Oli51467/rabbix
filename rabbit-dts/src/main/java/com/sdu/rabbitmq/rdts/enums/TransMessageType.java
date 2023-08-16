@@ -4,5 +4,6 @@ public enum TransMessageType {
     SEND,
     RECEIVE,
     LOST,
-    DEAD
+    DEAD,
+    ERROR
 }

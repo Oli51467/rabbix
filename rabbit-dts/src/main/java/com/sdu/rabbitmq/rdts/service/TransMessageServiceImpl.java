@@ -128,6 +128,22 @@ public class TransMessageServiceImpl implements TransMessageService {
         deleteTransMessage(id);
     }
 
+    /**
+     * 更改该消息的状态为失败
+     * @param id 消息id
+     */
+    @Override
+    public void consumeMessageFailed(String id) {
+        QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id", id).eq("service", serviceName);
+        TransMessage transMessage = transMessageMapper.selectOne(queryWrapper);
+        if (null != transMessage) {
+            UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();
+            updateWrapper.eq("id", id).set("type", TransMessageType.ERROR.toString());
+            transMessageMapper.update(null, updateWrapper);
+        }
+    }
+
     private TransMessage saveMessage(String exchange, String routingKey, String body, TransMessageType type) {
         TransMessage transMessage = new TransMessage();
         transMessage.setId(UUID.randomUUID().toString().replace("-", ""));
@@ -140,6 +156,20 @@ public class TransMessageServiceImpl implements TransMessageService {
         transMessage.setType(type);
         transMessageMapper.insert(transMessage);
         return transMessage;
+    }
+
+    private void saveMessage(String id, String exchange, String queue, String routingKey, String body, TransMessageType type) {
+        TransMessage transMessage = new TransMessage();
+        transMessage.setId(id);
+        transMessage.setService(serviceName);
+        transMessage.setExchange(exchange);
+        transMessage.setRoutingKey(routingKey);
+        transMessage.setQueue(queue);
+        transMessage.setPayload(body);
+        transMessage.setSequence(0);
+        transMessage.setType(type);
+        transMessage.setCreateTime(new Date());
+        transMessageMapper.insert(transMessage);
     }
 
     private void deleteTransMessage(String id) {

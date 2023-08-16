@@ -1,13 +1,12 @@
 package com.sdu.rabbitmq.restaurant.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.common.commons.enums.ProductStatus;
+import com.sdu.rabbitmq.common.domain.po.Product;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
-import com.sdu.rabbitmq.restaurant.enums.OrderStatus;
-import com.sdu.rabbitmq.restaurant.enums.ProductStatus;
 import com.sdu.rabbitmq.restaurant.enums.RestaurantStatus;
 import com.sdu.rabbitmq.restaurant.entity.dto.OrderMessageDTO;
-import com.sdu.rabbitmq.restaurant.entity.po.Product;
 import com.sdu.rabbitmq.restaurant.entity.po.Restaurant;
 import com.sdu.rabbitmq.restaurant.repository.ProductMapper;
 import com.sdu.rabbitmq.restaurant.repository.RestaurantMapper;

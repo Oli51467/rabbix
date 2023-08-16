@@ -91,4 +91,12 @@ public interface TransMessageService {
      * @param id 消息id
      */
     void consumeMessageSuccess(String id);
+
+    /**
+     * consumeMessageFailed
+     * 消息消费失败
+     *
+     * @param id 消息id
+     */
+    void consumeMessageFailed(String id);
 }

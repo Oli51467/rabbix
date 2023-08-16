@@ -39,11 +39,12 @@ public abstract class AbstractMessageListener implements ChannelAwareMessageList
             // 消费端需要实现该类的抽象方法，然后调用具体业务的接收处理方法
             receiveMessage(message);
             channel.basicAck(deliveryTag, false);
-            transMessageService.consumeMessageSuccess(properties.getMessageId());
+            transMessageService.consumeMessageSuccess(transMessage.getId());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             if (transMessage.getSequence() > resendTimes) {
                 channel.basicReject(deliveryTag, false);
+                transMessageService.consumeMessageFailed(transMessage.getId());
             } else {
                 // 等待一段时间，等待时间由重试次数决定
                 Thread.sleep((long) (Math.pow(2, transMessage.getSequence()) * 1000));
