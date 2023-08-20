@@ -2,7 +2,7 @@
 
 ## 工具及版本
 
-- SpringBoot ```2.2.4.RELEASE```
+- SpringBoot ```2.3.2.RELEASE```
 - MybatisPlus ```3.5.2```
 - RabbitMQ ```3.12.2```
 - MySql ```8.0.32```
