@@ -20,7 +20,7 @@ public class RedisTestController {
     @RequestMapping(value = "/test", method = RequestMethod.GET)
     @Transactional
     public void createOrder() {
-        int lockStatus = productMapper.lockStock(2L);
+        int lockStatus = productMapper.lockStock(2L, 1);
         System.out.println(lockStatus);
 
     }

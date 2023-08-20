@@ -1,8 +1,11 @@
 package com.sdu.rabbitmq.order.entity.vo;
 
+import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -15,6 +18,6 @@ public class CreateOrderVO {
     // 地址
     private String address;
 
-    // 产品id
-    private Long productId;
+    // 订单细节
+    private List<ProductOrderDetail> details;
 }

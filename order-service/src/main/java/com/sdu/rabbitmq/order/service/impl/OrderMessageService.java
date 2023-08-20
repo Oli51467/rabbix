@@ -3,12 +3,15 @@ package com.sdu.rabbitmq.order.service.impl;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
+import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.common.domain.po.OrderDetail;
+import com.sdu.rabbitmq.common.domain.po.OrderProduct;
+import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
+import com.sdu.rabbitmq.order.repository.OrderProductMapper;
 import com.sdu.rabbitmq.order.repository.ProductMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
-import com.sdu.rabbitmq.order.entity.dto.OrderMessageDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * 和rabbitmq消息处理相关的通信服务类
@@ -49,6 +53,9 @@ public class OrderMessageService extends AbstractMessageListener {
 
     @Resource
     private ProductMapper productMapper;
+
+    @Resource
+    private OrderProductMapper orderProductMapper;
 
     @Resource
     private TransMessageTransmitter transmitter;
@@ -127,9 +134,17 @@ public class OrderMessageService extends AbstractMessageListener {
                     updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.ORDER_CREATED)
                             .set("reward_id", orderMessage.getRewardId());
                     orderDetailMapper.update(null, updateWrapper);
-                    int flag = productMapper.deductStock(orderMessage.getProductId());
-                    if (flag != 1) {
-                        updateOrderFailed(orderMessage.getOrderId());
+                    List<ProductOrderDetail> productOrderDetails = orderMessage.getDetails();
+                    for (ProductOrderDetail productOrderDetail : productOrderDetails) {
+                        int flag = productMapper.deductStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
+                        if (flag != 1) {
+                            updateOrderFailed(orderMessage.getOrderId());
+                        }
+                        OrderProduct orderProduct = new OrderProduct();
+                        orderProduct.setOrderId(orderMessage.getOrderId());
+                        orderProduct.setProductId(productOrderDetail.getProductId());
+                        orderProduct.setCount(productOrderDetail.getCount());
+                        orderProductMapper.insert(orderProduct);
                     }
                 } else {
                     // 如果没有积分id，则直接更新订单的状态为失败

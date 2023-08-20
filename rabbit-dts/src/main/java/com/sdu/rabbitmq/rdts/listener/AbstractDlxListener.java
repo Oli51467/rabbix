@@ -31,11 +31,17 @@ public abstract class AbstractDlxListener implements ChannelAwareMessageListener
         log.error("dead letter! message: {}", message);
 
         MessageProperties properties = message.getMessageProperties();
-        boolean save = receiveMessage(message);
-        if (save) {
-            transMessageService.handleMessageDead(properties.getMessageId(), properties.getReceivedExchange(),
-                    properties.getReceivedRoutingKey(), properties.getConsumerQueue(), messageBody);
+        boolean save = false;
+        try {
+            save = receiveMessage(message);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        } finally{
+            channel.basicAck(properties.getDeliveryTag(), false);
+            if (save) {
+                transMessageService.handleMessageDead(properties.getMessageId(), properties.getReceivedExchange(),
+                        properties.getReceivedRoutingKey(), properties.getConsumerQueue(), messageBody);
+            }
         }
-        channel.basicAck(properties.getDeliveryTag(), false);
     }
 }

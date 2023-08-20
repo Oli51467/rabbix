@@ -2,8 +2,8 @@ package com.sdu.rabbitmq.delivery.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.delivery.enums.DeliverymanStatus;
-import com.sdu.rabbitmq.delivery.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.delivery.entity.po.Deliveryman;
 import com.sdu.rabbitmq.delivery.repository.DeliverymanMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;

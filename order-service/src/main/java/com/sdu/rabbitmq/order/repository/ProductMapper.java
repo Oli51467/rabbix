@@ -8,12 +8,12 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface ProductMapper extends BaseMapper<Product> {
 
-    @Update("update product set stock_locked=stock_locked + 1 where id = #{id} and stock-stock_locked > 0")
-    int lockStock(Long id);
+    @Update("update product set stock_locked=stock_locked + #{count} where id = #{id} and stock-stock_locked > #{count}")
+    int lockStock(Long id, Integer count);
 
-    @Update("update product set stock_locked = stock_locked - 1 where id = #{id}")
-    int unlockStock(Long id);
+    @Update("update product set stock_locked = stock_locked - #{count} where id = #{id}")
+    void unlockStock(Long id, Integer count);
 
-    @Update("update product set stock_locked = stock_locked - 1, stock = stock - 1 where id = #{id}")
-    int deductStock(Long id);
+    @Update("update product set stock_locked = stock_locked - #{count}, stock = stock - #{count} where id = #{id}")
+    int deductStock(Long id, Integer count);
 }

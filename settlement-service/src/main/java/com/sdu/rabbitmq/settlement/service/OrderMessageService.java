@@ -1,11 +1,10 @@
 package com.sdu.rabbitmq.settlement.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
-import com.sdu.rabbitmq.settlement.enums.OrderStatus;
 import com.sdu.rabbitmq.settlement.enums.SettlementStatus;
-import com.sdu.rabbitmq.settlement.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.settlement.entity.po.Settlement;
 import com.sdu.rabbitmq.settlement.repository.SettlementMapper;
 import lombok.extern.slf4j.Slf4j;

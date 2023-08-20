@@ -259,6 +259,147 @@ public class RedisUtil {
         return stringRedisTemplate.opsForZSet().reverseRangeWithScores(key, 0, -1);
     }
 
+    // ================================Map=================================
+
+    /**
+     * HashGet
+     *
+     * @param key  键 不能为null
+     * @param item 项 不能为null
+     * @return 值
+     */
+    public static Object hGet(String key, String item) {
+        return stringRedisTemplate.opsForHash().get(key, item);
+    }
+
+    /**
+     * 获取hashKey对应的所有键值
+     *
+     * @param key 键
+     * @return 对应的多个键值
+     */
+    public static Map<Object, Object> hMultiGet(String key) {
+        return stringRedisTemplate.opsForHash().entries(key);
+
+    }
+
+    /**
+     * HashSet
+     *
+     * @param key 键
+     * @param map 对应多个键值
+     * @return true 成功 false 失败
+     */
+    public static Boolean hMultiSet(String key, Map<String, Object> map) {
+        try {
+            stringRedisTemplate.opsForHash().putAll(key, map);
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * HashSet 并设置时间
+     *
+     * @param key  键
+     * @param map  对应多个键值
+     * @param time 时间(秒)
+     * @return true成功 false失败
+     */
+    public static Boolean hMultiSet(String key, Map<String, Object> map, long time) {
+        try {
+            stringRedisTemplate.opsForHash().putAll(key, map);
+            if (time > 0) {
+                expire(key, time);
+            }
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 向一张hash表中放入数据,如果不存在将创建
+     *
+     * @param key   键
+     * @param item  项
+     * @param value 值
+     * @return true 成功 false失败
+     */
+    public static Boolean hSet(String key, String item, Object value) {
+        try {
+            stringRedisTemplate.opsForHash().put(key, item, value);
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 向一张hash表中放入数据,如果不存在将创建
+     *
+     * @param key   键
+     * @param item  项
+     * @param value 值
+     * @param time  时间(秒) 注意:如果已存在的hash表有时间,这里将会替换原有的时间
+     * @return true 成功 false失败
+     */
+    public static Boolean hSet(String key, String item, Object value, long time) {
+        try {
+            stringRedisTemplate.opsForHash().put(key, item, value);
+            if (time > 0) {
+                expire(key, time);
+            }
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 删除hash表中的值
+     *
+     * @param key  键 不能为null
+     * @param item 项 可以使多个 不能为null
+     */
+    public static void hDelete(String key, Object... item) {
+        stringRedisTemplate.opsForHash().delete(key, item);
+    }
+
+    /**
+     * 判断hash表中是否有该项的值
+     *
+     * @param key  键 不能为null
+     * @param item 项 不能为null
+     * @return true 存在 false不存在
+     */
+    public static Boolean hHasKey(String key, String item) {
+        return stringRedisTemplate.opsForHash().hasKey(key, item);
+    }
+
+    /**
+     * 指定缓存失效时间
+     *
+     * @param key  键
+     * @param time 时间(秒)
+     */
+    public static Boolean expire(String key, long time) {
+        try {
+            if (time > 0) {
+                stringRedisTemplate.expire(key, time, TimeUnit.SECONDS);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+        return true;
+    }
+
     /**
      * ------------------相关业务操作--------------------------------
      */

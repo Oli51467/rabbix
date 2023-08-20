@@ -22,8 +22,6 @@ public class OrderDetail {
 
     private Long accountId;
 
-    private Long productId;
-
     private Long deliverymanId;
 
     private Long settlementId;

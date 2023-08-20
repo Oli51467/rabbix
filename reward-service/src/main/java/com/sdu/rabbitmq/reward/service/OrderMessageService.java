@@ -1,11 +1,10 @@
 package com.sdu.rabbitmq.reward.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
-import com.sdu.rabbitmq.reward.enums.OrderStatus;
 import com.sdu.rabbitmq.reward.enums.RewardStatus;
-import com.sdu.rabbitmq.reward.entity.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.reward.entity.po.Reward;
 import com.sdu.rabbitmq.reward.repository.RewardMapper;
 import lombok.extern.slf4j.Slf4j;

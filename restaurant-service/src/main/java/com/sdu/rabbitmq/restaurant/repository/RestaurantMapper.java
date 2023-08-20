@@ -6,4 +6,6 @@ import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
 public interface RestaurantMapper extends BaseMapper<Restaurant> {
+
+
 }

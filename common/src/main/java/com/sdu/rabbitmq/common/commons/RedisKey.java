@@ -7,6 +7,7 @@ public class RedisKey {
 
     private static final String BASE_KEY = "rabbit:";
     public static String USER_TOKEN_KEY = "user:token_%d";
+    public static final String PRODUCT_DETAILS_KEY = "product:details_%d";
 
     public static final String LUA_INCR_EXPIRE =
             "local key,ttl=KEYS[1],ARGV[1] \n" +
