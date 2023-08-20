@@ -4,6 +4,8 @@ import com.sdu.rabbitmq.rdts.listener.AbstractDlxListener;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,23 +14,27 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty("rdts.dlxEnabled")
 public class DlxConfig {
 
+    private static final String DLX_EXCHANGE = "exchange.dlx";
+    public static final String DLX_QUEUE = "queue.dlx";
+
     @Bean
-    public TopicExchange dlxExchange() {
-        return new TopicExchange("exchange.dlx");
+    public Exchange dlxExchange() {
+        return ExchangeBuilder.topicExchange(DLX_EXCHANGE).build();
     }
 
     @Bean
     public Queue dlxQueue() {
-        return new Queue("queue.dlx", true, false, false);
+        return QueueBuilder.durable(DLX_QUEUE).build();
     }
 
     @Bean
     public Binding dlxBinding() {
-        return BindingBuilder.bind(dlxQueue()).to(dlxExchange()).with("#");
+        return BindingBuilder.bind(dlxQueue()).to(dlxExchange()).with("#").noargs();
     }
 
     @Bean
-    public SimpleMessageListenerContainer deadLetterListenerContainer(ConnectionFactory connectionFactory, AbstractDlxListener abstractDlxListener) {
+    public SimpleMessageListenerContainer deadLetterListenerContainer(@Autowired ConnectionFactory connectionFactory,
+                                                                      @Autowired AbstractDlxListener abstractDlxListener) {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
         container.setQueues(dlxQueue());
         container.setExposeListenerChannel(true);

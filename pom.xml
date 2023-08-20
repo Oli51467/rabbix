@@ -29,16 +29,28 @@
         <java.version>8</java.version>
         <lombok.version>1.18.24</lombok.version>
         <mybatis-plus.version>3.5.2</mybatis-plus.version>
-        <spring.version>2.2.4.RELEASE</spring.version>
+        <spring.version>2.3.2.RELEASE</spring.version>
         <mysql.version>8.0.32</mysql.version>
         <netty.version>4.1.35.Final</netty.version>
         <hutool.version>5.7.17</hutool.version>
         <redis.version>2.7.3</redis.version>
         <redission.version>3.17.1</redission.version>
+        <springcloud.version>Hoxton.SR7</springcloud.version>
+        <knife4j.version>2.0.6</knife4j.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+
+            <!--spring-cloud-->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${springcloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
@@ -99,6 +111,12 @@
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>${redission.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
             </dependency>
         </dependencies>
 

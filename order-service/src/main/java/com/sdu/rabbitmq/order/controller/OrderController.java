@@ -4,6 +4,7 @@ import com.sdu.rabbitmq.common.response.ResponseResult;
 import com.sdu.rabbitmq.order.entity.dto.PayOrderDTO;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import com.sdu.rabbitmq.order.service.OrderService;
+import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +13,7 @@ import javax.annotation.Resource;
 @Slf4j
 @RestController
 @RequestMapping("/order")
+@Api("order")
 public class OrderController {
 
     @Resource

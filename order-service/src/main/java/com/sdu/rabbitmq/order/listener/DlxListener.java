@@ -39,7 +39,7 @@ public class DlxListener extends AbstractDlxListener {
         if (orderDetail.getStatus().equals(OrderStatus.WAITING_PAY)) {
             // 将该订单关闭
             UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-            updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.FAILED.toString());
+            updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.CANCELED.toString());
             orderDetailMapper.update(null, updateWrapper);
             productMapper.unlockStock(orderDetail.getProductId());
         }

@@ -27,6 +27,10 @@ public enum OrderStatus {
      */
     ORDER_CREATED,
     /**
+     * 订单取消
+     */
+    CANCELED,
+    /**
      * 订单创建失败
      */
     FAILED

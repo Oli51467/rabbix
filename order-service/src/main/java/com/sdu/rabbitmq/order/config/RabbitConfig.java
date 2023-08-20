@@ -6,11 +6,10 @@ import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.HashMap;
 
 @Slf4j
 @Configuration
@@ -46,70 +45,75 @@ public class RabbitConfig {
     /* -------------------Order to Restaurant-------------------*/
     @Bean
     public Exchange orderRestaurantExchange() {
-        return new DirectExchange(orderRestaurantExchange);
+        return ExchangeBuilder.directExchange(orderRestaurantExchange).build();
     }
 
     @Bean
     public Queue orderQueue() {
-        return new Queue(orderQueue);
+        return QueueBuilder.durable(orderQueue).build();
     }
 
     @Bean
-    public Binding orderRestaurantBinding() {
-        return new Binding(orderQueue, Binding.DestinationType.QUEUE, orderRestaurantExchange, orderRoutingKey, null);
+    public Binding orderRestaurantBinding(@Qualifier("orderQueue") Queue queue,
+                                          @Qualifier("orderRestaurantExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(orderRoutingKey).noargs();
     }
 
-    /* -------------------Delay Queue-------------------*/
+    /*
+    * 声明ttl队列 同时绑定死信交换机
+    * 消息在ttl队列里并不会被消费，等待超时后被自动转发到死信交换机，最终到达死信队列做订单超时的处理
+    */
     @Bean
     public Queue orderDelayQueue() {
-        HashMap<String, Object> args = new HashMap<>();
-        args.put("x-dead-letter-exchange", "exchange.dlx");
-        args.put("x-dead-letter-routing-key", releaseRoutingKey);
-        args.put("x-message-ttl", 15000);
-        return new Queue(orderDelayQueue, true, false, false, args);
+        return QueueBuilder.durable(orderDelayQueue)
+                .ttl(60000).deadLetterExchange("exchange.dlx").deadLetterRoutingKey(releaseRoutingKey)
+                .maxLength(100).build();
     }
 
     @Bean
-    public Binding orderReleaseBinding() {
-        return new Binding(orderDelayQueue, Binding.DestinationType.QUEUE, orderRestaurantExchange, releaseRoutingKey, null);
+    public Binding orderReleaseBinding(@Qualifier("orderDelayQueue") Queue queue,
+                                       @Qualifier("orderRestaurantExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(releaseRoutingKey).noargs();
     }
 
     /* -------------------Order to Delivery-------------------*/
     @Bean
     public Exchange orderDeliveryExchange() {
-        return new DirectExchange(orderDeliveryExchange);
+        return ExchangeBuilder.directExchange(orderDeliveryExchange).build();
     }
 
     @Bean
-    public Binding orderDeliveryBinding() {
-        return new Binding(orderQueue, Binding.DestinationType.QUEUE, orderDeliveryExchange, orderRoutingKey, null);
+    public Binding orderDeliveryBinding(@Qualifier("orderQueue") Queue queue,
+                                        @Qualifier("orderDeliveryExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(orderRoutingKey).noargs();
     }
 
     /* -------------------Order to Settlement-------------------*/
     @Bean
     public Exchange orderSettlementExchange() {
-        return new FanoutExchange(orderSettlementSendExchange);
+        return ExchangeBuilder.fanoutExchange(orderSettlementSendExchange).build();
     }
 
     @Bean
     public Exchange settlementOrderExchange() {
-        return new FanoutExchange(orderSettlementReceiveExchange);
+        return ExchangeBuilder.fanoutExchange(orderSettlementReceiveExchange).build();
     }
 
     @Bean
-    public Binding orderSettlementBinding() {
-        return new Binding(orderQueue, Binding.DestinationType.QUEUE, orderSettlementReceiveExchange, orderRoutingKey, null);
+    public Binding orderSettlementBinding(@Qualifier("orderQueue") Queue queue) {
+        return BindingBuilder.bind(queue).to(settlementOrderExchange()).with(orderRoutingKey).noargs();
     }
 
     /* -------------------Order to Reward-------------------*/
     @Bean
     public Exchange orderRewardExchange() {
-        return new TopicExchange(orderRewardExchange);
+        return ExchangeBuilder.topicExchange(orderRewardExchange).build();
     }
 
     @Bean
-    public Binding orderRewardBinding() {
-        return new Binding(orderQueue, Binding.DestinationType.QUEUE, orderRewardExchange, orderRoutingKey, null);
+    public Binding orderRewardBinding(@Qualifier("orderQueue") Queue queue,
+                                      @Qualifier("orderRewardExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(orderRoutingKey).noargs();
     }
 
     @Bean
