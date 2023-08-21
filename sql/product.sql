@@ -20,6 +20,14 @@ CREATE TABLE `product`  (
 -- ----------------------------
 -- Records of product
 -- ----------------------------
-INSERT INTO `product` VALUES (2, 'product2', 23.25, 1, 2, 0, 'AVAILABLE', '2020-05-06 19:19:04');
+INSERT INTO `product` VALUES (2, '北京烤鸭', 18.38, 1, 100, 0, 'AVAILABLE', '2020-05-06 19:19:04');
+INSERT INTO `product` VALUES (3, '鱼香肉丝', 25.25, 1, 100, 0, 'AVAILABLE', '2020-05-06 19:19:05');
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+truncate table order_detail;
+truncate table order_product;
+truncate table settlement;
+truncate table trans_message;
+update product set stock = 100, stock_locked = 0 where id = 2;
+update product set stock = 100, stock_locked = 0 where id = 3;

@@ -30,8 +30,8 @@ public class OrderMessageService extends AbstractMessageListener {
     @Resource
     private TransMessageTransmitter transmitter;
 
-    @Value("${rabbitmq.exchange.settlement-order}")
-    private String orderSettlementSendExchange;
+    @Value("${rabbitmq.exchange.order-settlement}")
+    private String orderSettlementExchange;
 
     @Value("${rabbitmq.order-routing-key}")
     private String orderRoutingKey;
@@ -55,6 +55,6 @@ public class OrderMessageService extends AbstractMessageListener {
         orderMessage.setSettlementId(settlement.getId());
         // 将消息回发给订单服务
         log.info("结算服务发送给订单服务: {}", orderMessage);
-        transmitter.send(orderSettlementSendExchange, orderRoutingKey, orderMessage);
+        transmitter.send(orderSettlementExchange, orderRoutingKey, orderMessage);
     }
 }

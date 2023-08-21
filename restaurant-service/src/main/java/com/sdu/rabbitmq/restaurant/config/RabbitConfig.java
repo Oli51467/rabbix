@@ -6,6 +6,7 @@ import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,9 @@ public class RabbitConfig {
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String orderRestaurantExchange;
 
+    @Value("${rabbitmq.exchange.dlx}")
+    private String dlxExchange;
+
     @Value("${rabbitmq.restaurant-routing-key}")
     private String restaurantRoutingKey;
 
@@ -25,17 +29,19 @@ public class RabbitConfig {
 
     @Bean
     public Exchange orderRestaurantExchange() {
-        return new DirectExchange(orderRestaurantExchange);
+        return ExchangeBuilder.directExchange(orderRestaurantExchange).build();
     }
 
     @Bean
     public Queue restaurantQueue() {
-        return new Queue(restaurantQueue);
+        return QueueBuilder.durable(restaurantQueue).deadLetterExchange(dlxExchange).deadLetterRoutingKey(restaurantRoutingKey)
+                .maxLength(100).build();
     }
 
     @Bean
-    public Binding orderRestaurantBinding() {
-        return new Binding(restaurantQueue, Binding.DestinationType.QUEUE, orderRestaurantExchange, restaurantRoutingKey, null);
+    public Binding orderRestaurantBinding(@Qualifier("restaurantQueue") Queue queue,
+                                          @Qualifier("orderRestaurantExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(restaurantRoutingKey).noargs();
     }
 
     @Bean

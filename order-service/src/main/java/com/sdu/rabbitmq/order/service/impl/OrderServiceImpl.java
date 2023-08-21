@@ -80,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
         for (ProductOrderDetail productOrderDetail : productOrderDetails) {
             orderProductDetails.put(productOrderDetail.getProductId().toString(), productOrderDetail.getCount().toString());
         }
-        RedisUtil.hMultiSet(getKey(PRODUCT_DETAILS_KEY, order.getId()), orderProductDetails, 2000);
+        RedisUtil.hMultiSet(getKey(PRODUCT_DETAILS_KEY, order.getId()), orderProductDetails, 80);
         // 将订单信息发送到延迟队列 等待支付
         try {
             transmitter.send(exchangeOrderRestaurant, releaseRoutingKey, orderMessage);
@@ -104,11 +104,10 @@ public class OrderServiceImpl implements OrderService {
             if (product.getStock() - product.getStockLocked() < productOrderDetail.getCount() || product.getStatus().equals(ProductStatus.NOT_AVAILABLE)) {
                 return false;
             }
+        }
+        for (ProductOrderDetail productOrderDetail : productOrderDetails) {
             // 锁定库存
-            int lockStatus = productMapper.lockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
-            if (lockStatus <= 0) {
-                return false;
-            }
+            productMapper.lockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
         }
         return true;
     }

@@ -6,6 +6,7 @@ import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,10 +16,10 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitConfig {
 
     @Value("${rabbitmq.exchange.order-settlement}")
-    private String orderSettlementReceiveExchange;
+    private String orderSettlementExchange;
 
-    @Value("${rabbitmq.exchange.settlement-order}")
-    private String orderSettlementSendExchange;
+    @Value("${rabbitmq.exchange.dlx}")
+    private String dlxExchange;
 
     @Value("${rabbitmq.settlement-routing-key}")
     private String settlementRoutingKey;
@@ -28,17 +29,19 @@ public class RabbitConfig {
 
     @Bean
     public Exchange orderSettlementExchange() {
-        return new FanoutExchange(orderSettlementSendExchange);
+        return ExchangeBuilder.directExchange(orderSettlementExchange).build();
     }
 
     @Bean
     public Queue settlementQueue() {
-        return new Queue(settlementQueue);
+        return QueueBuilder.durable(settlementQueue).deadLetterExchange(dlxExchange)
+                .deadLetterRoutingKey(settlementRoutingKey).maxLength(100).build();
     }
 
     @Bean
-    public Binding orderSettlementBinding() {
-        return new Binding(settlementQueue, Binding.DestinationType.QUEUE, orderSettlementReceiveExchange, settlementRoutingKey, null);
+    public Binding orderSettlementBinding(@Qualifier("settlementQueue") Queue queue,
+                                          @Qualifier("orderSettlementExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(settlementRoutingKey).noargs();
     }
 
     @Bean

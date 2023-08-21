@@ -1,6 +1,5 @@
 package com.sdu.rabbitmq.order.listener;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @Slf4j
@@ -35,20 +33,14 @@ public class DlxListener extends AbstractDlxListener {
     @Override
     public boolean receiveMessage(Message message) throws IOException {
         OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
-        QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", orderMessage.getOrderId());
-        List<OrderDetail> orderDetails = orderDetailMapper.selectList(queryWrapper);
-        if (orderDetails.get(0).getStatus().equals(OrderStatus.WAITING_PAY)) {
-            // 将该订单关闭
-            UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-            updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.CANCELED.toString());
-            orderDetailMapper.update(null, updateWrapper);
-            // 查询该订单的中所有商品及商品的数量
-            for (ProductOrderDetail productOrderDetail : orderMessage.getDetails()) {
-                productMapper.unlockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
-            }
+        // 将该订单关闭
+        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.FAILED.toString());
+        orderDetailMapper.update(null, updateWrapper);
+        // 查询该订单的中所有商品及商品的数量
+        for (ProductOrderDetail productOrderDetail : orderMessage.getDetails()) {
+            productMapper.unlockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
         }
-        // 设置死信不保存
-        return false;
+        return true;
     }
 }

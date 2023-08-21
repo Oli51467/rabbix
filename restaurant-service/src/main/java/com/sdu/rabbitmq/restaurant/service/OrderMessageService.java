@@ -50,6 +50,7 @@ public class OrderMessageService extends AbstractMessageListener {
         log.info("接收消息体: {}", messageBody);
         OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
         log.info("当前订单状态: {}", orderMessage.getOrderStatus());
+        //throw new IOException("IO Exception");
         // 根据产品id从数据库获取到订单中的产品
         List<ProductOrderDetail> details = orderMessage.getDetails();
         BigDecimal totalPrice = new BigDecimal(0);

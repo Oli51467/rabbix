@@ -1,5 +1,6 @@
 package com.sdu.rabbitmq.order.config;
 
+import com.sdu.rabbitmq.order.listener.DelayQueueListener;
 import com.sdu.rabbitmq.order.service.impl.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
@@ -22,19 +23,25 @@ public class RabbitConfig {
     public String orderDeliveryExchange;
 
     @Value("${rabbitmq.exchange.order-settlement}")
-    public String orderSettlementSendExchange;
-
-    @Value("${rabbitmq.exchange.settlement-order}")
-    public String orderSettlementReceiveExchange;
+    public String orderSettlementExchange;
 
     @Value("${rabbitmq.exchange.order-reward}")
     public String orderRewardExchange;
+
+    @Value("${rabbitmq.exchange.dlx}")
+    private String dlxExchange;
+
+    @Value("${rabbitmq.exchange.ttl}")
+    public String ttlExchange;
 
     @Value("${rabbitmq.order-queue}")
     public String orderQueue;
 
     @Value("${rabbitmq.order-delay-queue}")
     public String orderDelayQueue;
+
+    @Value("${rabbitmq.ttl-queue}")
+    private String ttlQueue;
 
     @Value("${rabbitmq.order-routing-key}")
     public String orderRoutingKey;
@@ -50,7 +57,8 @@ public class RabbitConfig {
 
     @Bean
     public Queue orderQueue() {
-        return QueueBuilder.durable(orderQueue).build();
+        return QueueBuilder.durable(orderQueue).deadLetterExchange(dlxExchange)
+                .deadLetterRoutingKey(orderRoutingKey).maxLength(100).build();
     }
 
     @Bean
@@ -64,9 +72,24 @@ public class RabbitConfig {
     * 消息在ttl队列里并不会被消费，等待超时后被自动转发到死信交换机，最终到达死信队列做订单超时的处理
     */
     @Bean
+    public Exchange ttlExchange() {
+        return ExchangeBuilder.topicExchange(ttlExchange).build();
+    }
+
+    @Bean
+    public Queue ttlQueue() {
+        return QueueBuilder.durable(ttlQueue).build();
+    }
+
+    @Bean
+    public Binding ttlBinding() {
+        return BindingBuilder.bind(ttlQueue()).to(ttlExchange()).with("#").noargs();
+    }
+
+    @Bean
     public Queue orderDelayQueue() {
         return QueueBuilder.durable(orderDelayQueue)
-                .ttl(60000).deadLetterExchange("exchange.dlx").deadLetterRoutingKey(releaseRoutingKey)
+                .ttl(60000).deadLetterExchange(ttlExchange).deadLetterRoutingKey(releaseRoutingKey)
                 .maxLength(100).build();
     }
 
@@ -91,17 +114,13 @@ public class RabbitConfig {
     /* -------------------Order to Settlement-------------------*/
     @Bean
     public Exchange orderSettlementExchange() {
-        return ExchangeBuilder.fanoutExchange(orderSettlementSendExchange).build();
+        return ExchangeBuilder.directExchange(orderSettlementExchange).build();
     }
 
     @Bean
-    public Exchange settlementOrderExchange() {
-        return ExchangeBuilder.fanoutExchange(orderSettlementReceiveExchange).build();
-    }
-
-    @Bean
-    public Binding orderSettlementBinding(@Qualifier("orderQueue") Queue queue) {
-        return BindingBuilder.bind(queue).to(settlementOrderExchange()).with(orderRoutingKey).noargs();
+    public Binding orderSettlementBinding(@Qualifier("orderQueue") Queue queue,
+                                          @Qualifier("orderSettlementExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(orderRoutingKey).noargs();
     }
 
     /* -------------------Order to Reward-------------------*/
@@ -126,5 +145,18 @@ public class RabbitConfig {
         messageListenerContainer.setAcknowledgeMode(AcknowledgeMode.MANUAL);
         messageListenerContainer.setMessageListener(orderMessageService);
         return messageListenerContainer;
+    }
+
+    @Bean
+    public SimpleMessageListenerContainer delayQueueListenerContainer(@Autowired ConnectionFactory connectionFactory,
+                                                                      @Autowired DelayQueueListener delayQueueListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueues(ttlQueue());
+        container.setExposeListenerChannel(true);
+        container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+        container.setMessageListener(delayQueueListener);
+        // 设置消费者能处理消息的最大个数
+        container.setPrefetchCount(100);
+        return container;
     }
 }

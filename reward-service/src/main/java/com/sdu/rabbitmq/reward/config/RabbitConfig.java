@@ -6,6 +6,7 @@ import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,9 @@ public class RabbitConfig {
     @Value("${rabbitmq.exchange.order-reward}")
     private String orderRewardExchange;
 
+    @Value("${rabbitmq.exchange.dlx}")
+    private String dlxExchange;
+
     @Value("${rabbitmq.reward-routing-key}")
     private String rewardRoutingKey;
 
@@ -25,17 +29,19 @@ public class RabbitConfig {
 
     @Bean
     public Exchange orderRewardExchange() {
-        return new TopicExchange(orderRewardExchange);
+        return ExchangeBuilder.topicExchange(orderRewardExchange).build();
     }
 
     @Bean
     public Queue rewardQueue() {
-        return new Queue(rewardQueue);
+        return QueueBuilder.durable(rewardQueue).deadLetterExchange(dlxExchange).deadLetterRoutingKey(rewardRoutingKey)
+                .maxLength(100).build();
     }
 
     @Bean
-    public Binding orderRewardBinding() {
-        return new Binding(rewardQueue, Binding.DestinationType.QUEUE, orderRewardExchange, rewardRoutingKey, null);
+    public Binding orderRewardBinding(@Qualifier("rewardQueue") Queue queue,
+                                      @Qualifier("orderRewardExchange") Exchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(rewardRoutingKey).noargs();
     }
 
     @Bean
