@@ -10,17 +10,18 @@ import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.common.domain.po.OrderDetail;
 import com.sdu.rabbitmq.common.domain.po.Product;
 import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
+import com.sdu.rabbitmq.common.feign.ProductQueryFeign;
+import com.sdu.rabbitmq.common.feign.StockFeign;
 import com.sdu.rabbitmq.common.response.ResponseResult;
 import com.sdu.rabbitmq.common.response.exception.BusinessException;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
 import com.sdu.rabbitmq.common.utils.RedisUtil;
 import com.sdu.rabbitmq.common.utils.SnowUtil;
 import com.sdu.rabbitmq.order.entity.dto.PayOrderDTO;
+import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
-import com.sdu.rabbitmq.order.repository.ProductMapper;
 import com.sdu.rabbitmq.order.service.OrderService;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
-import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,7 +40,10 @@ public class OrderServiceImpl implements OrderService {
     private OrderDetailMapper orderDetailMapper;
 
     @Resource
-    private ProductMapper productMapper;
+    private StockFeign stockFeign;
+
+    @Resource
+    private ProductQueryFeign productQueryFeign;
 
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String exchangeOrderRestaurant;
@@ -95,9 +99,7 @@ public class OrderServiceImpl implements OrderService {
     private boolean checkStockAndLock(long id, List<ProductOrderDetail> productOrderDetails) {
         // 判断是否有库存
         for (ProductOrderDetail productOrderDetail : productOrderDetails) {
-            QueryWrapper<Product> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("id", productOrderDetail.getProductId());
-            Product product = productMapper.selectOne(queryWrapper);
+            Product product = productQueryFeign.queryById(productOrderDetail.getProductId());
             if (null == product) {
                 throw new BusinessException(ExceptionEnum.NO_PRODUCT);
             }
@@ -107,7 +109,7 @@ public class OrderServiceImpl implements OrderService {
         }
         for (ProductOrderDetail productOrderDetail : productOrderDetails) {
             // 锁定库存
-            productMapper.lockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
+            stockFeign.lockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
         }
         return true;
     }

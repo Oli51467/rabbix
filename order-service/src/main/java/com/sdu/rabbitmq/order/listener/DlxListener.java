@@ -6,8 +6,8 @@ import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
 import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.common.domain.po.OrderDetail;
 import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
+import com.sdu.rabbitmq.common.feign.StockFeign;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
-import com.sdu.rabbitmq.order.repository.ProductMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractDlxListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -25,7 +25,7 @@ public class DlxListener extends AbstractDlxListener {
     private OrderDetailMapper orderDetailMapper;
 
     @Resource
-    private ProductMapper productMapper;
+    private StockFeign stockFeign;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -39,7 +39,7 @@ public class DlxListener extends AbstractDlxListener {
         orderDetailMapper.update(null, updateWrapper);
         // 查询该订单的中所有商品及商品的数量
         for (ProductOrderDetail productOrderDetail : orderMessage.getDetails()) {
-            productMapper.unlockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
+            stockFeign.unlockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
         }
         return true;
     }

@@ -37,6 +37,7 @@ public class ResendMessageScheduler {
         log.info("ready messages count: {}", readyMessages.size());
 
         for (TransMessage readyMessage : readyMessages) {
+            if (readyMessage.getSequence() == 0) continue;
             log.info("ready message: {}", readyMessage);
             // 重试次数+1
             transMessageService.resendMessage(readyMessage.getId());

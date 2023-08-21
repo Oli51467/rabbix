@@ -33,7 +33,7 @@ public class TransMessageServiceImpl implements TransMessageService {
     @Override
     public void sendMessageSuccess(String id) {
         QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", id).ne("type", TransMessageType.LOST.toString());
+        queryWrapper.eq("id", id).ne("type", TransMessageType.LOST.name());
         TransMessage transMessage = transMessageMapper.selectOne(queryWrapper);
         if (null != transMessage) {
             log.info("Deleted: {}", transMessage);
@@ -60,7 +60,7 @@ public class TransMessageServiceImpl implements TransMessageService {
     @Override
     public List<TransMessage> getReadyMessages() {
         QueryWrapper<TransMessage> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("type", TransMessageType.SEND.toString()).eq("service", serviceName);
+        queryWrapper.eq("type", TransMessageType.SEND.name()).eq("service", serviceName);
         return transMessageMapper.selectList(queryWrapper);
     }
 
@@ -139,7 +139,7 @@ public class TransMessageServiceImpl implements TransMessageService {
         TransMessage transMessage = transMessageMapper.selectOne(queryWrapper);
         if (null != transMessage) {
             UpdateWrapper<TransMessage> updateWrapper = new UpdateWrapper<>();
-            updateWrapper.eq("id", id).set("type", TransMessageType.ERROR.toString());
+            updateWrapper.eq("id", id).set("type", TransMessageType.ERROR.name());
             transMessageMapper.update(null, updateWrapper);
         }
     }
@@ -156,20 +156,6 @@ public class TransMessageServiceImpl implements TransMessageService {
         transMessage.setType(type);
         transMessageMapper.insert(transMessage);
         return transMessage;
-    }
-
-    private void saveMessage(String id, String exchange, String queue, String routingKey, String body, TransMessageType type) {
-        TransMessage transMessage = new TransMessage();
-        transMessage.setId(id);
-        transMessage.setService(serviceName);
-        transMessage.setExchange(exchange);
-        transMessage.setRoutingKey(routingKey);
-        transMessage.setQueue(queue);
-        transMessage.setPayload(body);
-        transMessage.setSequence(0);
-        transMessage.setType(type);
-        transMessage.setCreateTime(new Date());
-        transMessageMapper.insert(transMessage);
     }
 
     private void deleteTransMessage(String id) {

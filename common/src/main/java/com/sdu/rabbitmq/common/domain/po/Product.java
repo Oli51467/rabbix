@@ -1,5 +1,6 @@
 package com.sdu.rabbitmq.common.domain.po;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.sdu.rabbitmq.common.commons.enums.ProductStatus;
 import lombok.Getter;
@@ -14,6 +15,7 @@ import java.util.Date;
 @ToString
 public class Product {
 
+    @TableId
     private Long id;
 
     private String name;

@@ -23,6 +23,7 @@
         <module>reward-service</module>
         <module>rabbit-dts</module>
         <module>common</module>
+        <module>product-service</module>
     </modules>
 
     <properties>

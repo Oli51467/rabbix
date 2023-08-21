@@ -7,9 +7,9 @@ import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.common.domain.po.OrderDetail;
 import com.sdu.rabbitmq.common.domain.po.OrderProduct;
 import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
+import com.sdu.rabbitmq.common.feign.StockFeign;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import com.sdu.rabbitmq.order.repository.OrderProductMapper;
-import com.sdu.rabbitmq.order.repository.ProductMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -52,7 +51,7 @@ public class OrderMessageService extends AbstractMessageListener {
     private OrderDetailMapper orderDetailMapper;
 
     @Resource
-    private ProductMapper productMapper;
+    private StockFeign stockFeign;
 
     @Resource
     private OrderProductMapper orderProductMapper;
@@ -136,10 +135,7 @@ public class OrderMessageService extends AbstractMessageListener {
                     orderDetailMapper.update(null, updateWrapper);
                     List<ProductOrderDetail> productOrderDetails = orderMessage.getDetails();
                     for (ProductOrderDetail productOrderDetail : productOrderDetails) {
-                        int flag = productMapper.deductStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
-                        if (flag != 1) {
-                            updateOrderFailed(orderMessage.getOrderId());
-                        }
+                        stockFeign.deductStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
                         OrderProduct orderProduct = new OrderProduct();
                         orderProduct.setOrderId(orderMessage.getOrderId());
                         orderProduct.setProductId(productOrderDetail.getProductId());
