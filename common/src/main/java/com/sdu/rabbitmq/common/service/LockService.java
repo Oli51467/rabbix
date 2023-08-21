@@ -21,6 +21,7 @@ public class LockService {
 
     public <T> T executeWithLockThrows(String key, int waitTime, TimeUnit unit, SupplierThrow<T> supplier) throws Throwable {
         RLock lock = redissonClient.getLock(key);
+        lock.lock();
         boolean lockSuccess = lock.tryLock(waitTime, unit);
         if (!lockSuccess) {
             throw new BusinessException(ExceptionEnum.LOCK_LIMIT);

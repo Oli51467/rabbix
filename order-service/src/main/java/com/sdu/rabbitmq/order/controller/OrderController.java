@@ -27,6 +27,6 @@ public class OrderController {
 
     @RequestMapping(value = "/pay", method = RequestMethod.POST)
     public ResponseResult payOrder(@RequestBody PayOrderDTO payOrderDTO) {
-        return orderService.payOrder(payOrderDTO);
+        return orderService.payOrder(payOrderDTO.getOrderId());
     }
 }

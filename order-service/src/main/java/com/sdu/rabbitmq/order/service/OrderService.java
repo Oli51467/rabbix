@@ -8,5 +8,5 @@ public interface OrderService {
 
     ResponseResult createOrder(CreateOrderVO createOrderVO);
 
-    ResponseResult payOrder(PayOrderDTO payOrderDTO);
+    ResponseResult payOrder(String orderId);
 }

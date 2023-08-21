@@ -1,5 +1,9 @@
 # 可靠消息投递、可靠消息消费的分布式事务框架
 
+## 业务流程
+
+用户下单、支付、餐厅确认、系统分配骑手、订单结算、积分奖励的一致性解决方案
+
 ## 工具及版本
 
 - SpringBoot ```2.3.2.RELEASE```
@@ -168,7 +172,8 @@ INSERT INTO `deliveryman` VALUES (1, '配送员1号', 'AVAILABLE', '2020-06-10 2
 ```
 - 在product表中插入一条数据
 ```mysql
-INSERT INTO `product` VALUES (2, 'product2', 23.25, 1, 'AVAILABLE', '2020-05-06 19:19:04');
+INSERT INTO `product` VALUES (2, '北京烤鸭', 18.38, 1, 100, 0, 'AVAILABLE', '2020-05-06 19:19:04');
+INSERT INTO `product` VALUES (3, '鱼香肉丝', 25.25, 1, 100, 0, 'AVAILABLE', '2020-05-06 19:19:05');
 ```
 - 在restaurant表中插入一条数据
 ```mysql

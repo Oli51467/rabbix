@@ -3,6 +3,7 @@ package com.sdu.rabbitmq.order.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sdu.rabbitmq.common.annotation.Idempotent;
 import com.sdu.rabbitmq.common.annotation.RedissonLock;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
 import com.sdu.rabbitmq.common.commons.enums.ProductStatus;
@@ -17,7 +18,6 @@ import com.sdu.rabbitmq.common.response.exception.BusinessException;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
 import com.sdu.rabbitmq.common.utils.RedisUtil;
 import com.sdu.rabbitmq.common.utils.SnowUtil;
-import com.sdu.rabbitmq.order.entity.dto.PayOrderDTO;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import com.sdu.rabbitmq.order.service.OrderService;
@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.sdu.rabbitmq.common.commons.RedisKey.PRODUCT_DETAILS_KEY;
 import static com.sdu.rabbitmq.common.commons.RedisKey.getKey;
@@ -95,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
         return ResponseResult.ok(order.getId());
     }
 
-    @RedissonLock(prefixKey = "rabbit.stock", key = "#id")
+    @RedissonLock(prefixKey = "rabbit:stock", key = "#id")
     private boolean checkStockAndLock(long id, List<ProductOrderDetail> productOrderDetails) {
         // 判断是否有库存
         for (ProductOrderDetail productOrderDetail : productOrderDetails) {
@@ -116,23 +117,22 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * 支付订单
-     * @param payOrderDTO 支付订单dto
+     * @param orderId 支付订单id
      * @return ResponseResult
      */
     @Override
-    public ResponseResult payOrder(PayOrderDTO payOrderDTO) {
-        // 拿到订单id
-        String orderId = payOrderDTO.getOrderId();
+    @Idempotent(prefix = "rabbit:pay", key = "#orderId", waitTime = 2, unit = TimeUnit.MINUTES)
+    public ResponseResult payOrder(String orderId) {
         // 从数据库中将订单信息查出
         QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", Long.parseLong(orderId));
         OrderDetail orderDetail = orderDetailMapper.selectOne(queryWrapper);
         // 如果订单不存在或者订单已经不是待支付状态，则支付失败
-        if (null == orderDetail || !orderDetail.getStatus().equals(OrderStatus.WAITING_PAY)) {
-            return ResponseResult.fail("订单已失效");
+        if (null == orderDetail) {
+            return ResponseResult.fail("订单不存在");
         }
         // 如果redis中已经没有下单的商品详细信息，则订单已失效
-        if (!RedisUtil.hasKey(getKey(PRODUCT_DETAILS_KEY, Long.parseLong(orderId)))) {
+        if (!orderDetail.getStatus().equals(OrderStatus.WAITING_PAY) || !RedisUtil.hasKey(getKey(PRODUCT_DETAILS_KEY, Long.parseLong(orderId)))) {
             return ResponseResult.fail("订单已失效");
         }
         // 先将商品详细信息取出，防止业务操作时间过长导致失效
