@@ -1,13 +1,11 @@
 package com.sdu.rabbitmq.order.listener;
 
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
 import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
-import com.sdu.rabbitmq.common.domain.po.OrderDetail;
 import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
-import com.sdu.rabbitmq.common.feign.StockFeign;
-import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
+import com.sdu.rabbitmq.common.service.order.IOrderService;
+import com.sdu.rabbitmq.common.service.product.IProductService;
 import com.sdu.rabbitmq.rdts.listener.AbstractDlxListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -22,10 +20,10 @@ import java.io.IOException;
 public class DlxListener extends AbstractDlxListener {
 
     @Resource
-    private OrderDetailMapper orderDetailMapper;
+    private IOrderService iOrderService;
 
     @Resource
-    private StockFeign stockFeign;
+    private IProductService iProductService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -34,12 +32,10 @@ public class DlxListener extends AbstractDlxListener {
     public boolean receiveMessage(Message message) throws IOException {
         OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
         // 将该订单关闭
-        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.FAILED.toString());
-        orderDetailMapper.update(null, updateWrapper);
+        iOrderService.updateOrderDetailStatus(orderMessage.getOrderId(), OrderStatus.FAILED);
         // 查询该订单的中所有商品及商品的数量
         for (ProductOrderDetail productOrderDetail : orderMessage.getDetails()) {
-            stockFeign.unlockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
+            iProductService.unlockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
         }
         return true;
     }

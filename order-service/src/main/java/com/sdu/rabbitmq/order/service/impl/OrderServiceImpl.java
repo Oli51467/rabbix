@@ -1,7 +1,5 @@
 package com.sdu.rabbitmq.order.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sdu.rabbitmq.common.annotation.Idempotent;
 import com.sdu.rabbitmq.common.annotation.RedissonLock;
@@ -11,15 +9,13 @@ import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.common.domain.po.OrderDetail;
 import com.sdu.rabbitmq.common.domain.po.Product;
 import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
-import com.sdu.rabbitmq.common.feign.ProductQueryFeign;
-import com.sdu.rabbitmq.common.feign.StockFeign;
 import com.sdu.rabbitmq.common.response.ResponseResult;
 import com.sdu.rabbitmq.common.response.exception.BusinessException;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
+import com.sdu.rabbitmq.common.service.order.IOrderService;
+import com.sdu.rabbitmq.common.service.product.IProductService;
 import com.sdu.rabbitmq.common.utils.RedisUtil;
-import com.sdu.rabbitmq.common.utils.SnowUtil;
 import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
-import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
 import com.sdu.rabbitmq.order.service.OrderService;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +23,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.sdu.rabbitmq.common.commons.RedisKey.PRODUCT_DETAILS_KEY;
@@ -38,13 +37,10 @@ import static com.sdu.rabbitmq.common.commons.RedisKey.getKey;
 public class OrderServiceImpl implements OrderService {
 
     @Resource
-    private OrderDetailMapper orderDetailMapper;
+    private IOrderService iOrderService;
 
     @Resource
-    private StockFeign stockFeign;
-
-    @Resource
-    private ProductQueryFeign productQueryFeign;
+    private IProductService iProductService;
 
     @Value("${rabbitmq.exchange.order-restaurant}")
     private String exchangeOrderRestaurant;
@@ -66,13 +62,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(ExceptionEnum.NO_STOCK);
         }
         // 商品存在且库存足够 创建订单 设置订单状态为创建中
-        OrderDetail order = new OrderDetail();
-        order.setId(SnowUtil.getSnowflakeNextId());
-        order.setAddress(createOrderVO.getAddress());
-        order.setAccountId(createOrderVO.getAccountId());
-        order.setCreateTime(new Date());
-        order.setStatus(OrderStatus.WAITING_PAY);
-        orderDetailMapper.insert(order);
+        OrderDetail order = iOrderService.createOrder(createOrderVO.getAddress(), createOrderVO.getAccountId());
 
         // 创建消息队列传输对象
         OrderMessageDTO orderMessage = new OrderMessageDTO();
@@ -100,7 +90,8 @@ public class OrderServiceImpl implements OrderService {
     private boolean checkStockAndLock(long id, List<ProductOrderDetail> productOrderDetails) {
         // 判断是否有库存
         for (ProductOrderDetail productOrderDetail : productOrderDetails) {
-            Product product = productQueryFeign.queryById(productOrderDetail.getProductId());
+            // 查询商品
+            Product product = iProductService.queryById(productOrderDetail.getProductId());
             if (null == product) {
                 throw new BusinessException(ExceptionEnum.NO_PRODUCT);
             }
@@ -110,38 +101,40 @@ public class OrderServiceImpl implements OrderService {
         }
         for (ProductOrderDetail productOrderDetail : productOrderDetails) {
             // 锁定库存
-            stockFeign.lockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
+            iProductService.lockStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
         }
         return true;
     }
 
     /**
      * 支付订单
-     * @param orderId 支付订单id
+     * @param orderIdStr 支付订单id
      * @return ResponseResult
      */
     @Override
     @Idempotent(prefix = "rabbit:pay", key = "#orderId", waitTime = 2, unit = TimeUnit.MINUTES)
-    public ResponseResult payOrder(String orderId) {
+    public ResponseResult payOrder(String orderIdStr) {
+        Long orderId;
+        try {
+            orderId = Long.parseLong(orderIdStr);
+        } catch (Exception e) {
+            return ResponseResult.fail("订单不存在");
+        }
         // 从数据库中将订单信息查出
-        QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", Long.parseLong(orderId));
-        OrderDetail orderDetail = orderDetailMapper.selectOne(queryWrapper);
+        OrderDetail orderDetail = iOrderService.selectById(orderId);
         // 如果订单不存在或者订单已经不是待支付状态，则支付失败
         if (null == orderDetail) {
             return ResponseResult.fail("订单不存在");
         }
         // 如果redis中已经没有下单的商品详细信息，则订单已失效
-        if (!orderDetail.getStatus().equals(OrderStatus.WAITING_PAY) || !RedisUtil.hasKey(getKey(PRODUCT_DETAILS_KEY, Long.parseLong(orderId)))) {
+        if (!orderDetail.getStatus().equals(OrderStatus.WAITING_PAY) || !RedisUtil.hasKey(getKey(PRODUCT_DETAILS_KEY, orderId))) {
             return ResponseResult.fail("订单已失效");
         }
         // 先将商品详细信息取出，防止业务操作时间过长导致失效
-        Map<Object, Object> orderProductDetails = RedisUtil.hMultiGet(getKey(PRODUCT_DETAILS_KEY, Long.parseLong(orderId)));
+        Map<Object, Object> orderProductDetails = RedisUtil.hMultiGet(getKey(PRODUCT_DETAILS_KEY, orderId));
         log.info("orderProductDetails: {}", orderProductDetails);
         // 订单存在，将订单状态修改状态为ORDER_CREATING
-        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", orderId).set("status", OrderStatus.ORDER_CREATING.toString());
-        orderDetailMapper.update(null, updateWrapper);
+        iOrderService.updateOrderDetailStatus(orderId, OrderStatus.ORDER_CREATING);
         // 创建消息队列传输对象 状态为ORDER_CREATING
         OrderMessageDTO orderMessage = new OrderMessageDTO();
         orderMessage.setOrderId(orderDetail.getId());

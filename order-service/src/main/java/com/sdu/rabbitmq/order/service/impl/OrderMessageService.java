@@ -1,20 +1,17 @@
 package com.sdu.rabbitmq.order.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
 import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
-import com.sdu.rabbitmq.common.domain.po.OrderDetail;
 import com.sdu.rabbitmq.common.domain.po.OrderProduct;
 import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
-import com.sdu.rabbitmq.common.feign.StockFeign;
-import com.sdu.rabbitmq.order.repository.OrderDetailMapper;
+import com.sdu.rabbitmq.common.service.order.IOrderService;
+import com.sdu.rabbitmq.common.service.product.IProductService;
 import com.sdu.rabbitmq.order.repository.OrderProductMapper;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,10 +45,10 @@ public class OrderMessageService extends AbstractMessageListener {
     public String rewardRoutingKey;
 
     @Resource
-    private OrderDetailMapper orderDetailMapper;
+    private IOrderService iOrderService;
 
     @Resource
-    private StockFeign stockFeign;
+    private IProductService iProductService;
 
     @Resource
     private OrderProductMapper orderProductMapper;
@@ -59,7 +56,7 @@ public class OrderMessageService extends AbstractMessageListener {
     @Resource
     private TransMessageTransmitter transmitter;
 
-    @Autowired
+    @Resource
     private ObjectMapper objectMapper;
 
     /**
@@ -72,6 +69,7 @@ public class OrderMessageService extends AbstractMessageListener {
         String messageBody = new String(message.getBody());
         log.info("接收到的消息体: {}", messageBody);
         OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
+        Long orderId = orderMessage.getOrderId();
         log.info("当前订单状态: {}", orderMessage.getOrderStatus());
         // 通过订单状态判断是哪个微服务发来的消息
         switch (orderMessage.getOrderStatus()) {
@@ -79,16 +77,13 @@ public class OrderMessageService extends AbstractMessageListener {
             case ORDER_CREATING:
                 // 商家已确认订单并将价格写入
                 if (orderMessage.getConfirmed() && null != orderMessage.getPrice()) {
-                    UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                    updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.RESTAURANT_CONFIRMED)
-                            .set("price", orderMessage.getPrice());
-                    orderDetailMapper.update(null, updateWrapper);
+                    iOrderService.updateOrderDetailStatusAndPrice(orderId, OrderStatus.RESTAURANT_CONFIRMED, orderMessage.getPrice());
                     // 设置订单状态
                     orderMessage.setOrderStatus(OrderStatus.RESTAURANT_CONFIRMED);
                     // 给骑手微服务发送消息
                     transmitter.send(orderDeliveryExchange, deliveryRoutingKey, orderMessage);
                 } else {
-                    updateOrderFailed(orderMessage.getOrderId());
+                    updateOrderFailed(orderId);
                 }
                 break;
             // 骑手已确认后 消息的状态还没来得及改为DELIVERYMAN_CONFIRMED，所以还是RESTAURANT_CONFIRMED
@@ -96,55 +91,46 @@ public class OrderMessageService extends AbstractMessageListener {
                 // 判断订单已经有了确定的骑手
                 if (null != orderMessage.getDeliverymanId()) {
                     // 更新数据库的订单状态和骑手信息
-                    UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                    updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.DELIVERYMAN_CONFIRMED)
-                            .set("deliveryman_id", orderMessage.getDeliverymanId());
-                    orderDetailMapper.update(null, updateWrapper);
+                    iOrderService.updateOrderDetailStatusAndDelivery(orderId, OrderStatus.DELIVERYMAN_CONFIRMED, orderMessage.getDeliverymanId());
                     // 设置订单状态
                     orderMessage.setOrderStatus(OrderStatus.DELIVERYMAN_CONFIRMED);
                     // 向结算微服务发送一条消息 发送的方式是扇形广播
                     transmitter.send(orderSettlementSendExchange, settlementRoutingKey, orderMessage);
                 } else {
                     // 如果没有骑手，则直接更新订单的状态为失败
-                    updateOrderFailed(orderMessage.getOrderId());
+                    updateOrderFailed(orderId);
                 }
                 break;
             case DELIVERYMAN_CONFIRMED:
                 // 判断订单是否已经有了结算订单的id
                 if (null != orderMessage.getSettlementId()) {
                     // 更新数据库的订单状态和结算信息
-                    UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                    updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.SETTLEMENT_CONFIRMED)
-                            .set("settlement_id", orderMessage.getSettlementId());
-                    orderDetailMapper.update(null, updateWrapper);
+                    iOrderService.updateOrderDetailStatusAndSettlement(orderId, OrderStatus.SETTLEMENT_CONFIRMED, orderMessage.getSettlementId());
                     orderMessage.setOrderStatus(OrderStatus.SETTLEMENT_CONFIRMED);
                     // 向积分微服务发送一条消息 发送的方式是topic
                     transmitter.send(orderRewardExchange, rewardRoutingKey, orderMessage);
                 } else {
                     // 如果没有结算id，则直接更新订单的状态为失败
-                    updateOrderFailed(orderMessage.getOrderId());
+                    updateOrderFailed(orderId);
                 }
                 break;
             case SETTLEMENT_CONFIRMED:
                 // 判断订单是否已经有了积分的id
                 if (null != orderMessage.getRewardId()) {
                     // 更新数据库的订单状态和积分信息
-                    UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-                    updateWrapper.eq("id", orderMessage.getOrderId()).set("status", OrderStatus.ORDER_CREATED)
-                            .set("reward_id", orderMessage.getRewardId());
-                    orderDetailMapper.update(null, updateWrapper);
+                    iOrderService.updateOrderDetailStatusAndReward(orderId, OrderStatus.ORDER_CREATED, orderMessage.getRewardId());
                     List<ProductOrderDetail> productOrderDetails = orderMessage.getDetails();
                     for (ProductOrderDetail productOrderDetail : productOrderDetails) {
-                        stockFeign.deductStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
+                        iProductService.deductStock(productOrderDetail.getProductId(), productOrderDetail.getCount());
                         OrderProduct orderProduct = new OrderProduct();
-                        orderProduct.setOrderId(orderMessage.getOrderId());
+                        orderProduct.setOrderId(orderId);
                         orderProduct.setProductId(productOrderDetail.getProductId());
                         orderProduct.setCount(productOrderDetail.getCount());
                         orderProductMapper.insert(orderProduct);
                     }
                 } else {
                     // 如果没有积分id，则直接更新订单的状态为失败
-                    updateOrderFailed(orderMessage.getOrderId());
+                    updateOrderFailed(orderId);
                 }
                 break;
             default:
@@ -153,8 +139,6 @@ public class OrderMessageService extends AbstractMessageListener {
     }
 
     private void updateOrderFailed(Long orderId) {
-        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", orderId).set("status", OrderStatus.FAILED);
-        orderDetailMapper.update(null, updateWrapper);
+        iOrderService.updateOrderDetailStatus(orderId, OrderStatus.FAILED);
     }
 }

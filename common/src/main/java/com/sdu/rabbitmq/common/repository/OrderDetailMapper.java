@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.reward.repository;
+package com.sdu.rabbitmq.common.repository;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.sdu.rabbitmq.common.domain.po.OrderDetail;

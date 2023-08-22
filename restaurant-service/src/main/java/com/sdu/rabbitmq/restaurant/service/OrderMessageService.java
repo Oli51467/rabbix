@@ -5,7 +5,7 @@ import com.sdu.rabbitmq.common.commons.enums.ProductStatus;
 import com.sdu.rabbitmq.common.domain.dto.OrderMessageDTO;
 import com.sdu.rabbitmq.common.domain.po.Product;
 import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
-import com.sdu.rabbitmq.common.feign.ProductQueryFeign;
+import com.sdu.rabbitmq.common.service.product.IProductService;
 import com.sdu.rabbitmq.rdts.listener.AbstractMessageListener;
 import com.sdu.rabbitmq.rdts.transmitter.TransMessageTransmitter;
 import com.sdu.rabbitmq.restaurant.entity.po.Restaurant;
@@ -33,7 +33,7 @@ public class OrderMessageService extends AbstractMessageListener {
     private String orderRoutingKey;
 
     @Resource
-    private ProductQueryFeign productQueryFeign;
+    private IProductService iProductService;
 
     @Resource
     private RestaurantMapper restaurantMapper;
@@ -56,7 +56,7 @@ public class OrderMessageService extends AbstractMessageListener {
         BigDecimal totalPrice = new BigDecimal(0);
         orderMessage.setConfirmed(true);
         for (ProductOrderDetail detail : details) {
-            Product product = productQueryFeign.queryById(detail.getProductId());
+            Product product = iProductService.queryById(detail.getProductId());
             log.info("订单产品信息: {}", product);
             // 根据产品中的餐厅id获取到餐厅信息
             Restaurant restaurant = restaurantMapper.selectById(product.getRestaurantId());

@@ -18,7 +18,7 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.Date;
 
-import static com.sdu.rabbitmq.settlement.util.SnowUtil.getSnowflakeNextId;
+import static com.sdu.rabbitmq.common.utils.SnowUtil.getSnowflakeNextId;
 
 @Service("OrderMessageService")
 @Slf4j
