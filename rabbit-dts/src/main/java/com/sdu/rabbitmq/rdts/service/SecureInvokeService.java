@@ -34,13 +34,13 @@ public class SecureInvokeService {
 
     private final Executor executor;
 
-    @Scheduled(cron = "*/5 * * * * ?")
-    public void retry() {
-        List<SecureInvokeRecord> secureInvokeRecords = secureInvokeRecordDAO.getWaitRetryRecords();
-        for (SecureInvokeRecord secureInvokeRecord : secureInvokeRecords) {
-            doAsyncInvoke(secureInvokeRecord);
-        }
-    }
+//    @Scheduled(cron = "*/100000000 * * * * ?")
+//    public void retry() {
+//        List<SecureInvokeRecord> secureInvokeRecords = secureInvokeRecordDAO.getWaitRetryRecords();
+//        for (SecureInvokeRecord secureInvokeRecord : secureInvokeRecords) {
+//            doAsyncInvoke(secureInvokeRecord);
+//        }
+//    }
 
     public void save(SecureInvokeRecord record) {
         secureInvokeRecordDAO.save(record);

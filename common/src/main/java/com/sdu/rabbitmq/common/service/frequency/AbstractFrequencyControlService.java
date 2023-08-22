@@ -1,7 +1,6 @@
-package com.sdu.rabbitmq.common.service;
+package com.sdu.rabbitmq.common.service.frequency;
 
 import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
-import com.sdu.rabbitmq.common.factory.FrequencyControlStrategyFactory;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
 import com.sdu.rabbitmq.common.response.exception.FrequencyControlException;
 import lombok.extern.slf4j.Slf4j;

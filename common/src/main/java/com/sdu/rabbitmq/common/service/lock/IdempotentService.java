@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.common.service;
+package com.sdu.rabbitmq.common.service.lock;
 
 import com.sdu.rabbitmq.common.response.exception.BusinessException;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;

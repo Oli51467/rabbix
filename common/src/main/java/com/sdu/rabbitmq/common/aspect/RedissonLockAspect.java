@@ -2,7 +2,7 @@ package com.sdu.rabbitmq.common.aspect;
 
 import cn.hutool.core.util.StrUtil;
 import com.sdu.rabbitmq.common.annotation.RedissonLock;
-import com.sdu.rabbitmq.common.service.LockService;
+import com.sdu.rabbitmq.common.service.lock.LockService;
 import com.sdu.rabbitmq.common.utils.SpElUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;

@@ -1,8 +1,8 @@
 package com.sdu.rabbitmq.common.utils;
 
 import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
-import com.sdu.rabbitmq.common.factory.FrequencyControlStrategyFactory;
-import com.sdu.rabbitmq.common.service.AbstractFrequencyControlService;
+import com.sdu.rabbitmq.common.service.frequency.FrequencyControlStrategyFactory;
+import com.sdu.rabbitmq.common.service.frequency.AbstractFrequencyControlService;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;

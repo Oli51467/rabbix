@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.common.service;
+package com.sdu.rabbitmq.common.service.frequency;
 
 import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
 import com.sdu.rabbitmq.common.utils.RedisUtil;

@@ -7,16 +7,18 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 @EnableScheduling
+@RefreshScope
 @Configuration
 @Component
 @Slf4j
@@ -25,10 +27,10 @@ public class ResendMessageScheduler {
     @Value("${rdts.resend-time}")
     private Integer resendTimes;
 
-    @Autowired
+    @Resource
     private RabbitTemplate rabbitTemplate;
 
-    @Autowired
+    @Resource
     private TransMessageService transMessageService;
 
     @Scheduled(fixedDelayString = "${rdts.resend-frequency}")

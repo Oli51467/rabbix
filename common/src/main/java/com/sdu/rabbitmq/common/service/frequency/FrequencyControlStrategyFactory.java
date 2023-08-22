@@ -1,7 +1,7 @@
-package com.sdu.rabbitmq.common.factory;
+package com.sdu.rabbitmq.common.service.frequency;
 
 import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
-import com.sdu.rabbitmq.common.service.AbstractFrequencyControlService;
+import com.sdu.rabbitmq.common.service.frequency.AbstractFrequencyControlService;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

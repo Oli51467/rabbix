@@ -3,7 +3,6 @@ package com.sdu.rabbitmq.common.domain.po;
 import lombok.*;
 
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 @Getter
