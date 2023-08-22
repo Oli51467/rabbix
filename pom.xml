@@ -19,7 +19,7 @@
         <module>order-service</module>
         <module>restaurant-service</module>
         <module>delivery-service</module>
-        <module>settlement-service</module>
+        <module>pay-service</module>
         <module>reward-service</module>
         <module>rabbit-dts</module>
         <module>common</module>

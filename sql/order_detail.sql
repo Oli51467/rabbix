@@ -12,7 +12,6 @@ CREATE TABLE `order_detail`  (
   `account_id` bigint(0) NULL DEFAULT NULL COMMENT '用户id',
   `product_id` bigint(0) NULL DEFAULT NULL COMMENT '产品id',
   `deliveryman_id` bigint(0) NULL DEFAULT NULL COMMENT '骑手id',
-  `settlement_id` bigint(0) NULL DEFAULT NULL COMMENT '结算id',
   `reward_id` bigint(0) NULL DEFAULT NULL COMMENT '积分奖励id',
   `price` decimal(10, 2) NULL DEFAULT NULL COMMENT '价格',
   `create_time` datetime(0) NULL DEFAULT NULL COMMENT '时间',

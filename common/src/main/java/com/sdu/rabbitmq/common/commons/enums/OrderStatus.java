@@ -19,10 +19,6 @@ public enum OrderStatus {
      */
     DELIVERYMAN_CONFIRMED,
     /**
-     * 已结算
-     */
-    SETTLEMENT_CONFIRMED,
-    /**
      * 订单已创建
      */
     ORDER_CREATED,

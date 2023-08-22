@@ -22,9 +22,6 @@ public class RabbitConfig {
     @Value("${rabbitmq.exchange.order-delivery}")
     public String orderDeliveryExchange;
 
-    @Value("${rabbitmq.exchange.order-settlement}")
-    public String orderSettlementExchange;
-
     @Value("${rabbitmq.exchange.order-reward}")
     public String orderRewardExchange;
 
@@ -112,16 +109,16 @@ public class RabbitConfig {
     }
 
     /* -------------------Order to Settlement-------------------*/
-    @Bean
-    public Exchange orderSettlementExchange() {
-        return ExchangeBuilder.directExchange(orderSettlementExchange).build();
-    }
-
-    @Bean
-    public Binding orderSettlementBinding(@Qualifier("orderQueue") Queue queue,
-                                          @Qualifier("orderSettlementExchange") Exchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with(orderRoutingKey).noargs();
-    }
+//    @Bean
+//    public Exchange orderSettlementExchange() {
+//        return ExchangeBuilder.directExchange(orderSettlementExchange).build();
+//    }
+//
+//    @Bean
+//    public Binding orderSettlementBinding(@Qualifier("orderQueue") Queue queue,
+//                                          @Qualifier("orderSettlementExchange") Exchange exchange) {
+//        return BindingBuilder.bind(queue).to(exchange).with(orderRoutingKey).noargs();
+//    }
 
     /* -------------------Order to Reward-------------------*/
     @Bean

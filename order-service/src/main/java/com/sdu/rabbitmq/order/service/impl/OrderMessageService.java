@@ -29,17 +29,11 @@ public class OrderMessageService extends AbstractMessageListener {
     @Value("${rabbitmq.exchange.order-delivery}")
     private String orderDeliveryExchange;
 
-    @Value("${rabbitmq.exchange.order-settlement}")
-    private String orderSettlementSendExchange;
-
     @Value("${rabbitmq.exchange.order-reward}")
     private String orderRewardExchange;
 
     @Value("${rabbitmq.delivery-routing-key}")
     public String deliveryRoutingKey;
-
-    @Value("${rabbitmq.settlement-routing-key}")
-    public String settlementRoutingKey;
 
     @Value("${rabbitmq.reward-routing-key}")
     public String rewardRoutingKey;
@@ -94,27 +88,14 @@ public class OrderMessageService extends AbstractMessageListener {
                     iOrderService.updateOrderDetailStatusAndDelivery(orderId, OrderStatus.DELIVERYMAN_CONFIRMED, orderMessage.getDeliverymanId());
                     // 设置订单状态
                     orderMessage.setOrderStatus(OrderStatus.DELIVERYMAN_CONFIRMED);
-                    // 向结算微服务发送一条消息 发送的方式是扇形广播
-                    transmitter.send(orderSettlementSendExchange, settlementRoutingKey, orderMessage);
+                    // 向积分微服务发送一条消息 发送的方式是topic
+                    transmitter.send(orderRewardExchange, rewardRoutingKey, orderMessage);
                 } else {
                     // 如果没有骑手，则直接更新订单的状态为失败
                     updateOrderFailed(orderId);
                 }
                 break;
             case DELIVERYMAN_CONFIRMED:
-                // 判断订单是否已经有了结算订单的id
-                if (null != orderMessage.getSettlementId()) {
-                    // 更新数据库的订单状态和结算信息
-                    iOrderService.updateOrderDetailStatusAndSettlement(orderId, OrderStatus.SETTLEMENT_CONFIRMED, orderMessage.getSettlementId());
-                    orderMessage.setOrderStatus(OrderStatus.SETTLEMENT_CONFIRMED);
-                    // 向积分微服务发送一条消息 发送的方式是topic
-                    transmitter.send(orderRewardExchange, rewardRoutingKey, orderMessage);
-                } else {
-                    // 如果没有结算id，则直接更新订单的状态为失败
-                    updateOrderFailed(orderId);
-                }
-                break;
-            case SETTLEMENT_CONFIRMED:
                 // 判断订单是否已经有了积分的id
                 if (null != orderMessage.getRewardId()) {
                     // 更新数据库的订单状态和积分信息

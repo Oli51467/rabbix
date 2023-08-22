@@ -1,4 +1,4 @@
-package com.sdu.rabbitmq.settlement.listener;
+package com.sdu.rabbitmq.pay.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;

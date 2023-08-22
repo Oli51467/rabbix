@@ -1,6 +1,6 @@
-package com.sdu.rabbitmq.settlement.config;
+package com.sdu.rabbitmq.pay.config;
 
-import com.sdu.rabbitmq.settlement.service.OrderMessageService;
+import com.sdu.rabbitmq.pay.service.OrderMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
