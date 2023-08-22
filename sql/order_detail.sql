@@ -10,7 +10,6 @@ CREATE TABLE `order_detail`  (
   `status` varchar(36) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '状态',
   `address` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '订单地址',
   `account_id` bigint(0) NULL DEFAULT NULL COMMENT '用户id',
-  `product_id` bigint(0) NULL DEFAULT NULL COMMENT '产品id',
   `deliveryman_id` bigint(0) NULL DEFAULT NULL COMMENT '骑手id',
   `reward_id` bigint(0) NULL DEFAULT NULL COMMENT '积分奖励id',
   `price` decimal(10, 2) NULL DEFAULT NULL COMMENT '价格',

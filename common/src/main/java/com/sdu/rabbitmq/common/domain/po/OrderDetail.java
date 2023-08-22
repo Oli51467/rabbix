@@ -26,8 +26,6 @@ public class OrderDetail {
 
     private Long deliverymanId;
 
-    private Long settlementId;
-
     private Long rewardId;
 
     private BigDecimal price;

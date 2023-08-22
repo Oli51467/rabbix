@@ -4,10 +4,8 @@ import com.sdu.rabbitmq.common.domain.po.ProductOrderDetail;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.springframework.validation.annotation.Validated;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;

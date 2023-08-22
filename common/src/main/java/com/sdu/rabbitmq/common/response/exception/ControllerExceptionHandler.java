@@ -1,6 +1,8 @@
 package com.sdu.rabbitmq.common.response.exception;
 
+import cn.hutool.core.util.StrUtil;
 import com.sdu.rabbitmq.common.response.ResponseResult;
+import io.seata.core.context.RootContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.BindException;
@@ -24,7 +26,11 @@ public class ControllerExceptionHandler {
      * @return 统一响应体
      */
     @ExceptionHandler(value = Exception.class)
-    public ResponseResult exceptionHandler(Exception e) {
+    public ResponseResult exceptionHandler(Exception e) throws Exception {
+        if (StrUtil.isNotBlank(RootContext.getXID())) {
+            logger.info("seata全局事务ID：{}", RootContext.getXID());
+            throw e;
+        }
         logger.error("系统异常：{}", e.getMessage());
         return ResponseResult.fail(e.getMessage());
     }

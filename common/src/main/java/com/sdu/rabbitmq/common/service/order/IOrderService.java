@@ -41,13 +41,6 @@ public class IOrderService {
         orderDetailMapper.update(null, updateWrapper);
     }
 
-    public void updateOrderDetailStatusAndSettlement(Long orderId, OrderStatus orderStatus, Long settlementId) {
-        log.info("update order status to: {}, orderId: {}", orderStatus.name(), orderId);
-        UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", orderId).set("status", orderStatus.name()).set("settlement_id", settlementId);
-        orderDetailMapper.update(null, updateWrapper);
-    }
-
     public void updateOrderDetailStatusAndReward(Long orderId, OrderStatus orderStatus, Long rewardId) {
         log.info("update order status to: {}, orderId: {}", orderStatus.name(), orderId);
         UpdateWrapper<OrderDetail> updateWrapper = new UpdateWrapper<>();

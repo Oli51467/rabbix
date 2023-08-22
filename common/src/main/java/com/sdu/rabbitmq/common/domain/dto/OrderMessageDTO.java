@@ -32,9 +32,6 @@ public class OrderMessageDTO {
     // 用户id
     private Long accountId;
 
-    // 结算id
-    private Long settlementId;
-
     // 积分结算id
     private Long rewardId;
 

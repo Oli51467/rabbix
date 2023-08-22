@@ -6,18 +6,19 @@
 
 ## 工具及版本
 
-- SpringBoot ```2.2.5.RELEASE```
-- SpringCloud ```Hoxton.SR3```
-- SpringCloudAlibaba ```2.2.1.RELEASE```
+- SpringBoot ```2.3.12.RELEASE```
+- SpringCloud ```Hoxton.SR12```
+- SpringCloudAlibaba ```2.2.10-RC1```
 - MybatisPlus ```3.5.2```
 - RabbitMQ ```3.12.2```
 - MySql ```8.0.32```
 - Nacos ```2.2.0```
+- Seata ```1.6.1```
 
 ## 分布式事务解决方案
 
 - Seata+Nacos
-- RabbitMQ + 延时队列 + 死信队列
+- RabbitMQ + 延时队列 + 死信队列 + 消息确认
 - 本地消息表(记录事务执行的某一方法) + RocketMQ/RabbitMQ
 
 ### 传统事务 ACID
@@ -49,7 +50,7 @@ BASE理论
 - 消费失败重试
 - 死信告警
 
-## RabbitMQ + 延时队列 + 死信队列
+## RabbitMQ + 延时队列 + 死信队列 + 消息确认
 ### 消息可靠性处理
 
 - Producer

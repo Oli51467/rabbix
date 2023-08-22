@@ -27,7 +27,6 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 truncate table order_detail;
 truncate table order_product;
-truncate table settlement;
 truncate table trans_message;
 update product set stock = 100, stock_locked = 0 where id = 2;
 update product set stock = 100, stock_locked = 0 where id = 3;
