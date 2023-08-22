@@ -6,10 +6,13 @@
 
 ## 工具及版本
 
-- SpringBoot ```2.3.2.RELEASE```
+- SpringBoot ```2.2.5.RELEASE```
+- SpringCloud ```Hoxton.SR3```
+- SpringCloudAlibaba ```2.2.1.RELEASE```
 - MybatisPlus ```3.5.2```
 - RabbitMQ ```3.12.2```
 - MySql ```8.0.32```
+- Nacos ```2.2.0```
 
 ## 消息可靠性处理
 

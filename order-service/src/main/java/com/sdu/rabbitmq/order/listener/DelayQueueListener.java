@@ -32,7 +32,7 @@ public class DelayQueueListener implements ChannelAwareMessageListener {
     public void onMessage(Message message, Channel channel) throws Exception {
         OrderMessageDTO orderMessage = objectMapper.readValue(message.getBody(), OrderMessageDTO.class);
         Long orderId = orderMessage.getOrderId();
-        OrderDetail orderDetails = iOrderService.selectById(orderId);
+        OrderDetail orderDetails = iOrderService.queryById(orderId);
         if (orderDetails.getStatus().equals(OrderStatus.WAITING_PAY)) {
             log.error("订单已失效，订单号：{}", orderId);
             // 将该订单关闭

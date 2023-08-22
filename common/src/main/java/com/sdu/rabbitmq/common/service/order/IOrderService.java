@@ -55,7 +55,7 @@ public class IOrderService {
         orderDetailMapper.update(null, updateWrapper);
     }
 
-    public OrderDetail selectById(Long orderId) {
+    public OrderDetail queryById(Long orderId) {
         QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", orderId);
         return orderDetailMapper.selectOne(queryWrapper);

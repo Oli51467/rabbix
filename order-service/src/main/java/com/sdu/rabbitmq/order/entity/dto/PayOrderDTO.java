@@ -9,5 +9,5 @@ import lombok.ToString;
 @ToString
 public class PayOrderDTO {
 
-    private String orderId;
+    private Long orderId;
 }

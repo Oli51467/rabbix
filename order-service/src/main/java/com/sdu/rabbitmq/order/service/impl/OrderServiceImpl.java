@@ -29,8 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.sdu.rabbitmq.common.commons.RedisKey.PRODUCT_DETAILS_KEY;
-import static com.sdu.rabbitmq.common.commons.RedisKey.getKey;
+import static com.sdu.rabbitmq.common.commons.RedisKey.*;
 
 @Service("OrderService")
 @Slf4j
@@ -75,7 +74,7 @@ public class OrderServiceImpl implements OrderService {
         for (ProductOrderDetail productOrderDetail : productOrderDetails) {
             orderProductDetails.put(productOrderDetail.getProductId().toString(), productOrderDetail.getCount().toString());
         }
-        RedisUtil.hMultiSet(getKey(PRODUCT_DETAILS_KEY, order.getId()), orderProductDetails, 80);
+        RedisUtil.hMultiSet(getKeyWithString(PRODUCT_DETAILS_KEY, order.getId().toString()), orderProductDetails, 80);
         // 将订单信息发送到延迟队列 等待支付
         try {
             transmitter.send(exchangeOrderRestaurant, releaseRoutingKey, orderMessage);
@@ -108,30 +107,24 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * 支付订单
-     * @param orderIdStr 支付订单id
+     * @param orderId 支付订单id
      * @return ResponseResult
      */
     @Override
     @Idempotent(prefix = "rabbit:pay", key = "#orderId", waitTime = 2, unit = TimeUnit.MINUTES)
-    public ResponseResult payOrder(String orderIdStr) {
-        Long orderId;
-        try {
-            orderId = Long.parseLong(orderIdStr);
-        } catch (Exception e) {
-            return ResponseResult.fail("订单不存在");
-        }
+    public ResponseResult payOrder(Long orderId) {
         // 从数据库中将订单信息查出
-        OrderDetail orderDetail = iOrderService.selectById(orderId);
+        OrderDetail orderDetail = iOrderService.queryById(orderId);
         // 如果订单不存在或者订单已经不是待支付状态，则支付失败
         if (null == orderDetail) {
             return ResponseResult.fail("订单不存在");
         }
         // 如果redis中已经没有下单的商品详细信息，则订单已失效
-        if (!orderDetail.getStatus().equals(OrderStatus.WAITING_PAY) || !RedisUtil.hasKey(getKey(PRODUCT_DETAILS_KEY, orderId))) {
+        if (!orderDetail.getStatus().equals(OrderStatus.WAITING_PAY) || !RedisUtil.hasKey(getKeyWithString(PRODUCT_DETAILS_KEY, orderId.toString()))) {
             return ResponseResult.fail("订单已失效");
         }
         // 先将商品详细信息取出，防止业务操作时间过长导致失效
-        Map<Object, Object> orderProductDetails = RedisUtil.hMultiGet(getKey(PRODUCT_DETAILS_KEY, orderId));
+        Map<Object, Object> orderProductDetails = RedisUtil.hMultiGet(getKeyWithString(PRODUCT_DETAILS_KEY, orderId.toString()));
         log.info("orderProductDetails: {}", orderProductDetails);
         // 订单存在，将订单状态修改状态为ORDER_CREATING
         iOrderService.updateOrderDetailStatus(orderId, OrderStatus.ORDER_CREATING);

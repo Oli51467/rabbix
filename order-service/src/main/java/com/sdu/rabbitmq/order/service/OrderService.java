@@ -7,5 +7,5 @@ public interface OrderService {
 
     ResponseResult createOrder(CreateOrderVO createOrderVO);
 
-    ResponseResult payOrder(String orderId);
+    ResponseResult payOrder(Long orderId);
 }

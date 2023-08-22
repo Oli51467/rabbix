@@ -7,7 +7,7 @@ public class RedisKey {
 
     private static final String BASE_KEY = "rabbit:";
     public static String USER_TOKEN_KEY = "user:token_%d";
-    public static final String PRODUCT_DETAILS_KEY = "product:details_%d";
+    public static final String PRODUCT_DETAILS_KEY = "product:details_%s";
 
     public static final String LUA_INCR_EXPIRE =
             "local key,ttl=KEYS[1],ARGV[1] \n" +
@@ -21,5 +21,9 @@ public class RedisKey {
 
     public static String getKey(String key, Object... objects) {
         return BASE_KEY + String.format(key, objects);
+    }
+
+    public static String getKeyWithString(String key, String objects) {
+        return BASE_KEY + key + objects;
     }
 }
