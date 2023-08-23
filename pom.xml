@@ -11,16 +11,15 @@
     </parent>
 
     <groupId>com.sdu</groupId>
-    <artifactId>rabbitmq-solution</artifactId>
+    <artifactId>rabbix</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>rabbitmq-solution</name>
+    <name>rabbix</name>
     <modules>
         <module>order-service</module>
         <module>restaurant-service</module>
         <module>delivery-service</module>
-        <module>reward-service</module>
-        <module>rabbit-dts</module>
+        <module>rabbix-transaction</module>
         <module>common</module>
     </modules>
 
