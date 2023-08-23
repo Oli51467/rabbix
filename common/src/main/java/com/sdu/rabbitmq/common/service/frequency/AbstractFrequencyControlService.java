@@ -4,10 +4,9 @@ import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
 import com.sdu.rabbitmq.common.response.exception.FrequencyControlException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.ObjectUtils;
+import org.apache.commons.lang3.ObjectUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,24 +52,12 @@ public abstract class AbstractFrequencyControlService<K extends FrequencyControl
     @SuppressWarnings("unchecked")
     public <T> T executeWithFrequencyControlList(List<K> frequencyControlList, SupplierThrowWithoutParam<T> supplier) throws Throwable {
         boolean existsFrequencyControlHasNullKey = frequencyControlList.stream().anyMatch(frequencyControl -> ObjectUtils.isEmpty(frequencyControl.getKey()));
-        if (!existsFrequencyControlHasNullKey) {
+        if (existsFrequencyControlHasNullKey) {
             throw new RuntimeException("限流策略的Key字段不允许出现空值");
         }
         Map<String, FrequencyControlDTO> frequencyControlDTOMap = frequencyControlList.stream().collect(Collectors.groupingBy(FrequencyControlDTO::getKey, Collectors.collectingAndThen(Collectors.toList(), list -> list.get(0))));
         return executeWithFrequencyControlMap((Map<String, K>) frequencyControlDTOMap, supplier);
     }
-
-    /**
-     * 单限流策略的调用方法-编程式调用
-     *
-     * @param frequencyControl 单个频控对象
-     * @param supplier         服务提供着
-     * @return 业务方法执行结果
-     */
-    public <T> T executeWithFrequencyControl(K frequencyControl, SupplierThrowWithoutParam<T> supplier) throws Throwable {
-        return executeWithFrequencyControlList(Collections.singletonList(frequencyControl), supplier);
-    }
-
 
     @FunctionalInterface
     public interface SupplierThrowWithoutParam<T> {
@@ -81,12 +68,6 @@ public abstract class AbstractFrequencyControlService<K extends FrequencyControl
          * @return a result
          */
         T get() throws Throwable;
-    }
-
-    @FunctionalInterface
-    public interface Executor {
-
-        void execute() throws Throwable;
     }
 
     /**

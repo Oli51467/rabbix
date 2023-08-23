@@ -33,7 +33,7 @@ public class FrequencyControlAspect {
         Map<String, FrequencyControl> keyMap = new HashMap<>();
         for (int i = 0; i < annotationsByType.length; i++) {
             FrequencyControl frequencyControl = annotationsByType[i];
-            String prefix = StrUtil.isBlank(frequencyControl.prefixKey()) ? SpElUtils.getMethodKey(method) + ":index:" + i : frequencyControl.prefixKey();//默认方法限定名+注解排名（可能多个）
+            String prefix = StrUtil.isBlank(frequencyControl.prefixKey()) ? "rabbit:frequency:" + SpElUtils.getMethodKey(method) + ":index:" + i : frequencyControl.prefixKey();//默认方法限定名+注解排名（可能多个）
             String key = "";
             switch (frequencyControl.target()) {
                 case EL:
@@ -44,6 +44,7 @@ public class FrequencyControlAspect {
                     break;
                 case UID:
                     key = UserContextHolder.get().getUid().toString();
+                    break;
             }
             keyMap.put(prefix + ":" + key, frequencyControl);
         }

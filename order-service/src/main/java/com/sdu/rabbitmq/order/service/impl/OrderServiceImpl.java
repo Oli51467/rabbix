@@ -1,6 +1,7 @@
 package com.sdu.rabbitmq.order.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sdu.rabbitmq.common.annotation.FrequencyControl;
 import com.sdu.rabbitmq.common.annotation.Idempotent;
 import com.sdu.rabbitmq.common.annotation.RedissonLock;
 import com.sdu.rabbitmq.common.commons.enums.OrderStatus;
@@ -53,6 +54,7 @@ public class OrderServiceImpl implements OrderService {
     @Resource
     private TransMessageTransmitter transmitter;
 
+    @FrequencyControl(time = 60, count = 10, target = FrequencyControl.Target.IP)
     public ResponseResult createOrder(CreateOrderVO createOrderVO) {
         log.info("createOrder:orderCreateVO: {}", createOrderVO);
         List<ProductOrderDetail> productOrderDetails = createOrderVO.getDetails();

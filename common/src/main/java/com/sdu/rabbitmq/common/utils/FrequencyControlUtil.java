@@ -1,9 +1,9 @@
 package com.sdu.rabbitmq.common.utils;
 
 import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
-import com.sdu.rabbitmq.common.service.frequency.FrequencyControlStrategyFactory;
 import com.sdu.rabbitmq.common.service.frequency.AbstractFrequencyControlService;
-import org.springframework.util.ObjectUtils;
+import com.sdu.rabbitmq.common.service.frequency.FrequencyControlStrategyFactory;
+import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.List;
 
@@ -11,28 +11,6 @@ import java.util.List;
  * 限流工具类 提供编程式的限流调用方法
  */
 public class FrequencyControlUtil {
-
-    /**
-     * 单限流策略的调用方法-编程式调用
-     *
-     * @param strategyName     策略名称
-     * @param frequencyControl 单个频控对象
-     * @param supplier         服务提供着
-     * @return 业务方法执行结果
-     */
-    public static <T, K extends FrequencyControlDTO> T executeWithFrequencyControl(String strategyName, K frequencyControl, AbstractFrequencyControlService.SupplierThrowWithoutParam<T> supplier) throws Throwable {
-        AbstractFrequencyControlService<K> frequencyController = FrequencyControlStrategyFactory.getFrequencyControllerByName(strategyName);
-        return frequencyController.executeWithFrequencyControl(frequencyControl, supplier);
-    }
-
-    public static <K extends FrequencyControlDTO> void executeWithFrequencyControl(String strategyName, K frequencyControl, AbstractFrequencyControlService.Executor executor) throws Throwable {
-        AbstractFrequencyControlService<K> frequencyController = FrequencyControlStrategyFactory.getFrequencyControllerByName(strategyName);
-        frequencyController.executeWithFrequencyControl(frequencyControl, () -> {
-            executor.execute();
-            return null;
-        });
-    }
-
 
     /**
      * 多限流策略的编程式调用方法调用方法
@@ -45,7 +23,7 @@ public class FrequencyControlUtil {
      */
     public static <T, K extends FrequencyControlDTO> T executeWithFrequencyControlList(String strategyName, List<K> frequencyControlList, AbstractFrequencyControlService.SupplierThrowWithoutParam<T> supplier) throws Throwable {
         boolean existsFrequencyControlHasNullKey = frequencyControlList.stream().anyMatch(frequencyControl -> ObjectUtils.isEmpty(frequencyControl.getKey()));
-        if (!existsFrequencyControlHasNullKey) {
+        if (existsFrequencyControlHasNullKey) {
             throw new RuntimeException("限流策略的Key字段不允许出现空值");
         }
         AbstractFrequencyControlService<K> frequencyController = FrequencyControlStrategyFactory.getFrequencyControllerByName(strategyName);
