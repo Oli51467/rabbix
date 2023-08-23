@@ -19,7 +19,6 @@
         <module>order-service</module>
         <module>restaurant-service</module>
         <module>delivery-service</module>
-        <module>pay-service</module>
         <module>reward-service</module>
         <module>rabbit-dts</module>
         <module>common</module>
@@ -38,6 +37,7 @@
         <springcloud.version>Hoxton.SR12</springcloud.version>
         <spring-cloud-alibaba.version>2.2.10-RC1</spring-cloud-alibaba.version>
         <knife4j.version>2.0.6</knife4j.version>
+        <alipay.version>4.10.170.ALL</alipay.version>
     </properties>
 
     <dependencyManagement>
@@ -120,6 +120,13 @@
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>${redission.version}</version>
+            </dependency>
+
+            <!--alipay-->
+            <dependency>
+                <groupId>com.alipay.sdk</groupId>
+                <artifactId>alipay-sdk-java</artifactId>
+                <version>${alipay.version}</version>
             </dependency>
 
             <dependency>

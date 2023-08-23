@@ -6,6 +6,4 @@ import com.sdu.rabbitmq.order.entity.vo.CreateOrderVO;
 public interface OrderService {
 
     ResponseResult createOrder(CreateOrderVO createOrderVO);
-
-    ResponseResult payOrder(Long orderId);
 }

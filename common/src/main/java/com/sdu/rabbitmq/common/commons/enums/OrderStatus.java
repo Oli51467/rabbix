@@ -27,6 +27,10 @@ public enum OrderStatus {
      */
     CANCELED,
     /**
+     * 订单已退款
+     */
+    REFUND,
+    /**
      * 订单创建失败
      */
     FAILED

@@ -280,7 +280,6 @@ public class RedisUtil {
      */
     public static Map<Object, Object> hMultiGet(String key) {
         return stringRedisTemplate.opsForHash().entries(key);
-
     }
 
     /**

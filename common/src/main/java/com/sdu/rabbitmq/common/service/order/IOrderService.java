@@ -54,12 +54,13 @@ public class IOrderService {
         return orderDetailMapper.selectOne(queryWrapper);
     }
 
-    public OrderDetail createOrder(String address, Long accountId) {
+    public OrderDetail createOrder(String address, Long accountId, BigDecimal price) {
         OrderDetail order = new OrderDetail();
         order.setId(SnowUtil.getSnowflakeNextId());
         order.setAddress(address);
         order.setAccountId(accountId);
         order.setCreateTime(new Date());
+        order.setPrice(price);
         order.setStatus(OrderStatus.WAITING_PAY);
         orderDetailMapper.insert(order);
         return order;

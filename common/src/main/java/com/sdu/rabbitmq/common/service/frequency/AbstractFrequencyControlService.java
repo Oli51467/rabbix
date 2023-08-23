@@ -1,10 +1,10 @@
 package com.sdu.rabbitmq.common.service.frequency;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
 import com.sdu.rabbitmq.common.response.exception.ExceptionEnum;
 import com.sdu.rabbitmq.common.response.exception.FrequencyControlException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -51,7 +51,7 @@ public abstract class AbstractFrequencyControlService<K extends FrequencyControl
      */
     @SuppressWarnings("unchecked")
     public <T> T executeWithFrequencyControlList(List<K> frequencyControlList, SupplierThrowWithoutParam<T> supplier) throws Throwable {
-        boolean existsFrequencyControlHasNullKey = frequencyControlList.stream().anyMatch(frequencyControl -> ObjectUtils.isEmpty(frequencyControl.getKey()));
+        boolean existsFrequencyControlHasNullKey = frequencyControlList.stream().anyMatch(frequencyControl -> ObjectUtil.isEmpty(frequencyControl.getKey()));
         if (existsFrequencyControlHasNullKey) {
             throw new RuntimeException("限流策略的Key字段不允许出现空值");
         }

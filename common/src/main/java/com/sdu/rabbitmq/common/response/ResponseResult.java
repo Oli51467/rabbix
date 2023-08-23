@@ -36,7 +36,7 @@ public class ResponseResult implements Serializable {
         return new ResponseResult(ResponseCode.FAIL.getCode(), ResponseCode.FAIL.getMsg(), "");
     }
 
-    public static ResponseResult fail(String errorMessage) {
+    public static ResponseResult fail(Object errorMessage) {
         return new ResponseResult(ResponseCode.FAIL.getCode(), ResponseCode.FAIL.getMsg(), errorMessage);
     }
 }

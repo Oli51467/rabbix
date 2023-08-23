@@ -25,6 +25,10 @@ public class IProductService {
         return productMapper.deductStock(productId, count);
     }
 
+    public Integer restoreStock(Long productId, Integer count) {
+        return productMapper.restoreStock(productId, count);
+    }
+
     public Product queryById(Long productId) {
         QueryWrapper<Product> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id", productId);

@@ -1,9 +1,9 @@
 package com.sdu.rabbitmq.common.utils;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.sdu.rabbitmq.common.domain.dto.FrequencyControlDTO;
 import com.sdu.rabbitmq.common.service.frequency.AbstractFrequencyControlService;
 import com.sdu.rabbitmq.common.service.frequency.FrequencyControlStrategyFactory;
-import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public class FrequencyControlUtil {
      * @throws Throwable 被限流或者限流策略定义错误
      */
     public static <T, K extends FrequencyControlDTO> T executeWithFrequencyControlList(String strategyName, List<K> frequencyControlList, AbstractFrequencyControlService.SupplierThrowWithoutParam<T> supplier) throws Throwable {
-        boolean existsFrequencyControlHasNullKey = frequencyControlList.stream().anyMatch(frequencyControl -> ObjectUtils.isEmpty(frequencyControl.getKey()));
+        boolean existsFrequencyControlHasNullKey = frequencyControlList.stream().anyMatch(frequencyControl -> ObjectUtil.isEmpty(frequencyControl.getKey()));
         if (existsFrequencyControlHasNullKey) {
             throw new RuntimeException("限流策略的Key字段不允许出现空值");
         }
